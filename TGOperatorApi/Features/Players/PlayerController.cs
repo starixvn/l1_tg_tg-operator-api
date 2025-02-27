@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Net.Mime;
-using System.Threading.Tasks;
+using TgOperator.Features.Players.Models;
 
-namespace TgOperator.Controllers
+namespace TgOperator.Features.Players
 {
     [ApiController]
     [Route("api/[controller]")]
@@ -17,15 +17,6 @@ namespace TgOperator.Controllers
             _playerService = playerService;
         }
 
-        /// <summary>
-        /// Retrieves the player's balance
-        /// </summary>
-        /// <param name="request">Player balance request details</param>
-        /// <returns>Player balance information</returns>
-        /// <response code="200">Returns the player's balance</response>
-        /// <response code="400">If the request is invalid</response>
-        /// <response code="401">If the authentication fails</response>
-        /// <response code="404">If the player is not found</response>
         [HttpPost("balance")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]

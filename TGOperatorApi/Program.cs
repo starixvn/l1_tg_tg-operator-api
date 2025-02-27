@@ -4,6 +4,7 @@ using Swashbuckle.AspNetCore.ReDoc;
 using Microsoft.Extensions.Options;
 using TgOperator.Shared.Configuration;
 using TgOperator.Shared.MongoDB;
+using TgOperator.Features.Players;
 
 var builder = WebApplication.CreateBuilder(args);
 
