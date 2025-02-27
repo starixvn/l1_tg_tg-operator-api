@@ -6,6 +6,7 @@ using TgOperator.Shared.Configuration;
 using TgOperator.Shared.MongoDB;
 using TgOperator.Features.Players;
 using Sentry;
+using MediatR;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -64,6 +65,9 @@ builder.Services.AddSingleton<IMongoDbFactory, MongoDbFactory>();
 
 // Register PlayerService
 builder.Services.AddSingleton<IPlayerService, PlayerService>();
+
+// Add MediatR
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
 
 var app = builder.Build();
 
