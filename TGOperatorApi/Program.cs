@@ -5,8 +5,25 @@ using Microsoft.Extensions.Options;
 using TgOperator.Shared.Configuration;
 using TgOperator.Shared.MongoDB;
 using TgOperator.Features.Players;
+using Sentry;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Add Sentry
+builder.WebHost.UseSentry(options =>
+{
+    var sentrySettings = builder.Configuration
+        .GetSection(nameof(SentrySettings))
+        .Get<SentrySettings>();
+    
+    options.Dsn = sentrySettings?.Dsn;
+    options.Debug = sentrySettings?.Debug ?? false;
+    options.TracesSampleRate = sentrySettings?.TracesSampleRate ?? 1.0;
+    options.MinimumEventLevel = Enum.Parse<LogLevel>(sentrySettings?.MinimumEventLevel ?? "Error");
+    options.SendDefaultPii = sentrySettings?.SendDefaultPii ?? true;
+    options.AttachStacktrace = sentrySettings?.AttachStacktrace ?? true;
+    options.Environment = sentrySettings?.Environment ?? builder.Environment.EnvironmentName;
+});
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi

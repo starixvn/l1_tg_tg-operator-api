@@ -13,6 +13,10 @@ namespace TgOperator.Shared.Configuration
             services.Configure<MongoDbSettings>(
                 configuration.GetSection(nameof(MongoDbSettings)));
 
+            // Bind and register Sentry settings
+            services.Configure<SentrySettings>(
+                configuration.GetSection(nameof(SentrySettings)));
+
             // You can add more configuration bindings here
             
             return services;

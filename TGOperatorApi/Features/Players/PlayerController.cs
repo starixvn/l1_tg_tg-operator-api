@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Net.Mime;
 using TgOperator.Features.Players.Models;
+using Sentry;
 
 namespace TgOperator.Features.Players
 {
@@ -11,10 +12,12 @@ namespace TgOperator.Features.Players
     public class PlayerController : ControllerBase
     {
         private readonly IPlayerService _playerService;
+        private readonly IHub _sentryHub;
 
-        public PlayerController(IPlayerService playerService)
+        public PlayerController(IPlayerService playerService, IHub sentryHub)
         {
             _playerService = playerService;
+            _sentryHub = sentryHub;
         }
 
         [HttpPost("balance")]
@@ -24,23 +27,32 @@ namespace TgOperator.Features.Players
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetBalance([FromBody] PlayerBalanceRequest request)
         {
-            var player = await _playerService.GetPlayerBalanceAsync(
-                request.OperatorId,
-                request.PlayerId,
-                request.SiteId);
-
-            if (player == null)
+            try
             {
-                return NotFound(new { message = "Player not found" });
-            }
+                var player = await _playerService.GetPlayerBalanceAsync(
+                    request.OperatorId,
+                    request.PlayerId,
+                    request.SiteId);
 
-            return Ok(new 
-            { 
-                balance = player.Balance,
-                currency = player.Currency,
-                playerId = player.PlayerId,
-                status = "success"
-            });
+                if (player == null)
+                {
+                    _sentryHub.CaptureMessage($"Player not found: {request.PlayerId}", SentryLevel.Warning);
+                    return NotFound(new { message = "Player not found" });
+                }
+
+                return Ok(new 
+                { 
+                    balance = player.Balance,
+                    currency = player.Currency,
+                    playerId = player.PlayerId,
+                    status = "success"
+                });
+            }
+            catch (Exception ex)
+            {
+                _sentryHub.CaptureException(ex);
+                throw;
+            }
         }
     }
 } 
