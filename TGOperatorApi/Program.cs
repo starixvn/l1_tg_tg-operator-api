@@ -1,6 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.ReDoc;
+using Microsoft.Extensions.Options;
+using TgOperator.Shared.Configuration;
+using TgOperator.Shared.MongoDB;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,6 +37,15 @@ builder.Services.AddSwaggerGen(c =>
         c.IncludeXmlComments(xmlPath);
     }
 });
+
+// Add configuration
+builder.Services.AddAppConfiguration(builder.Configuration);
+
+// Add MongoDB Factory as Singleton
+builder.Services.AddSingleton<IMongoDbFactory, MongoDbFactory>();
+
+// Register PlayerService
+builder.Services.AddSingleton<IPlayerService, PlayerService>();
 
 var app = builder.Build();
 

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Net.Mime;
+using System.Threading.Tasks;
 
 namespace TgOperator.Controllers
 {
@@ -9,6 +10,13 @@ namespace TgOperator.Controllers
     [ApiVersion("1.0")]
     public class PlayerController : ControllerBase
     {
+        private readonly IPlayerService _playerService;
+
+        public PlayerController(IPlayerService playerService)
+        {
+            _playerService = playerService;
+        }
+
         /// <summary>
         /// Retrieves the player's balance
         /// </summary>
@@ -17,19 +25,29 @@ namespace TgOperator.Controllers
         /// <response code="200">Returns the player's balance</response>
         /// <response code="400">If the request is invalid</response>
         /// <response code="401">If the authentication fails</response>
-        [HttpPost("GetBalance")]
+        /// <response code="404">If the player is not found</response>
+        [HttpPost("balance")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        public IActionResult GetBalance([FromBody] PlayerBalanceRequest request)
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetBalance([FromBody] PlayerBalanceRequest request)
         {
-            // TODO: Implement your business logic here
-            // This is just a sample response
+            var player = await _playerService.GetPlayerBalanceAsync(
+                request.OperatorId,
+                request.PlayerId,
+                request.SiteId);
+
+            if (player == null)
+            {
+                return NotFound(new { message = "Player not found" });
+            }
+
             return Ok(new 
             { 
-                balance = 1000.00,
-                currency = "USD",
-                playerId = request.PlayerId,
+                balance = player.Balance,
+                currency = player.Currency,
+                playerId = player.PlayerId,
                 status = "success"
             });
         }
