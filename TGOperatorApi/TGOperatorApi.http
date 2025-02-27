@@ -1,0 +1,6 @@
+@TGOperatorApi_HostAddress = http://localhost:5014
+
+GET {{TGOperatorApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
