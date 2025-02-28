@@ -4,6 +4,7 @@ using TgOperator.Features.Wallets.Models;
 using TgOperator.Features.Wallets.Commands;
 using MediatR;
 using Sentry;
+using TgOperator.Features.Wallets.Queries;
 
 namespace TgOperator.Features.Wallets
 {
@@ -53,6 +54,21 @@ namespace TgOperator.Features.Wallets
             {
                 _sentryHub.CaptureException(ex);
                 return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet("balance/{playerId}")]
+        public async Task<ActionResult<GetBalanceResponse>> GetBalance(string playerId, [FromQuery] string siteId)
+        {
+            try
+            {
+                var query = new GetBalanceQuery(playerId, siteId);
+                var result = await _mediator.Send(query);
+                return Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return NotFound(ex.Message);
             }
         }
     }
