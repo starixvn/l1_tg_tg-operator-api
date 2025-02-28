@@ -2,6 +2,7 @@ using MediatR;
 using MongoDB.Driver;
 using TgOperator.Features.Players.Commands;
 using TgOperator.Features.Players.Models;
+using TgOperator.Features.Wallets.Commands;
 using TgOperator.Shared.MongoDB;
 using Microsoft.Extensions.Options;
 using TgOperator.Shared.Configuration;
@@ -11,37 +12,37 @@ namespace TgOperator.Features.Players.Handlers
 {
     public class EndRoundCommandHandler : IRequestHandler<EndRoundCommand, EndRoundResult>
     {
-        private readonly IMongoCollection<Player> _players;
-        private readonly IMongoCollection<BetTransaction> _betTransactions;
+        private readonly IMongoCollection<GameTransaction> _gameTransactions;
+        private readonly IMediator _mediator;
         private readonly IHub _sentryHub;
 
         public EndRoundCommandHandler(
             IMongoDbFactory mongoDbFactory,
             IOptions<MongoDbSettings> mongoDbSettings,
+            IMediator mediator,
             IHub sentryHub)
         {
-            _players = mongoDbFactory.GetCollection<Player>(
-                mongoDbSettings.Value.PlayersCollectionName);
-            _betTransactions = mongoDbFactory.GetCollection<BetTransaction>(
-                mongoDbSettings.Value.BetTransactionsCollectionName);
+            _gameTransactions = mongoDbFactory.GetCollection<GameTransaction>(
+                mongoDbSettings.Value.GameTransactionsCollectionName);
+            _mediator = mediator;
             _sentryHub = sentryHub;
         }
 
         public async Task<EndRoundResult> Handle(EndRoundCommand command, CancellationToken cancellationToken)
         {
             var request = command.EndRoundRequest;
-            var session = await _players.Database.Client.StartSessionAsync();
+            var session = await _gameTransactions.Database.Client.StartSessionAsync();
             
             try
             {
                 session.StartTransaction();
 
-                // Verify if bet transaction exists and hasn't been settled
-                var existingBet = await _betTransactions
+                // Verify if bet transaction exists
+                var existingBet = await _gameTransactions
                     .Find(session, x => 
                         x.GameRoundId == request.GameRoundId && 
-                        x.PlayerId == request.PlayerId &&
-                        x.Status == TransactionType.Bet.ToString().ToLower())
+                        x.PlayerId == request.PlayerId.ToString() &&
+                        x.Type == GameTransactionType.Bet)
                     .FirstOrDefaultAsync(cancellationToken);
 
                 if (existingBet == null)
@@ -49,99 +50,69 @@ namespace TgOperator.Features.Players.Handlers
                     throw new InvalidOperationException("Original bet not found");
                 }
 
-                // Check for existing settlement to prevent double settlement
-                var existingSettle = await _betTransactions
+                // Check for existing end round
+                var existingEndRound = await _gameTransactions
                     .Find(session, x => 
                         x.GameRoundId == request.GameRoundId && 
-                        x.PlayerId == request.PlayerId &&
-                        x.Status == TransactionType.Settle.ToString().ToLower())
+                        x.PlayerId == request.PlayerId.ToString() &&
+                        x.Type == GameTransactionType.Settle)
                     .FirstOrDefaultAsync(cancellationToken);
 
-                if (existingSettle != null)
+                if (existingEndRound != null)
                 {
                     throw new InvalidOperationException("Round already settled");
                 }
 
-                // Find player
-                var player = await _players
-                    .Find(session, x =>
-                        x.PlayerId == request.PlayerId.ToString() &&
-                        x.SiteId == request.SiteId)
-                    .FirstOrDefaultAsync(cancellationToken);
+                // Credit win amount to wallet
+                var creditResult = await _mediator.Send(new CreditBalanceCommand(
+                    new CreditBalanceRequest
+                    {
+                        PlayerId = request.PlayerId.ToString(),
+                        SiteId = request.SiteId,
+                        Amount = request.TotalWin,
+                        Currency = existingBet.Currency,
+                        TransactionType = "win",
+                        GameRoundId = request.GameRoundId
+                    }), cancellationToken);
 
-                if (player == null)
+                if (!creditResult.Success)
                 {
-                    throw new InvalidOperationException("Player not found");
+                    throw new InvalidOperationException(creditResult.Message);
                 }
 
-                // Create settlement transaction
-                var transactionId = Guid.NewGuid().ToString();
-                var settleTransaction = new BetTransaction
+                // Create end round transaction
+                var gameTransaction = new GameTransaction
                 {
-                    TransactionId = transactionId,
-                    PlayerId = request.PlayerId,
-                    OperatorId = player.OperatorId,
+                    TransactionId = creditResult.TransactionId,
+                    PlayerId = request.PlayerId.ToString(),
                     SiteId = request.SiteId,
-                    Amount = request.TotalWin,
-                    Currency = player.Currency,
-                    BalanceBefore = player.Balance,
-                    BalanceAfter = player.Balance + request.TotalWin,
+                    Type = GameTransactionType.Settle,
                     GameRoundId = request.GameRoundId,
                     GameTypeId = request.GameTypeId,
-                    Seq = request.Seq,
-                    CreatedAt = DateTime.UtcNow,
+                    Currency = existingBet.Currency,
+                    TotalWin = request.TotalWin,
+                    TotalAmount = request.TotalAmount,
+                    ValidBetAmount = request.ValidBetAmount,
                     IsFreeBet = request.FreeBet,
-                    IsFreeSpin = false,
-                    ContributionAmount = 0,
-                    Status = TransactionType.Settle.ToString().ToLower()
+                    SettleTime = request.EndTime,
+                    CreatedAt = DateTime.UtcNow
                 };
 
-                // Update player's balance
-                var filter = Builders<Player>.Filter.And(
-                    Builders<Player>.Filter.Eq(x => x.PlayerId, request.PlayerId.ToString()),
-                    Builders<Player>.Filter.Eq(x => x.SiteId, request.SiteId)
-                );
-
-                var update = Builders<Player>.Update.Inc(x => x.Balance, request.TotalWin);
-
-                var updateResult = await _players.UpdateOneAsync(
-                    session,
-                    filter,
-                    update,
-                    cancellationToken: cancellationToken);
-
-                if (updateResult.ModifiedCount != 1)
-                {
-                    throw new InvalidOperationException("Failed to update player balance");
-                }
-
-                // Save transaction record
-                await _betTransactions.InsertOneAsync(
+                await _gameTransactions.InsertOneAsync(
                     session, 
-                    settleTransaction,
-                    cancellationToken: cancellationToken);
-
-                // Update original bet transaction status
-                var betFilter = Builders<BetTransaction>.Filter.Eq(x => x.Id, existingBet.Id);
-                var betUpdate = Builders<BetTransaction>.Update
-                    .Set(x => x.Status, TransactionType.Settle.ToString().ToLower());
-
-                await _betTransactions.UpdateOneAsync(
-                    session,
-                    betFilter,
-                    betUpdate,
+                    gameTransaction,
                     cancellationToken: cancellationToken);
 
                 await session.CommitTransactionAsync(cancellationToken);
 
                 return new EndRoundResult
                 {
-                    TransactionId = transactionId,
-                    Balance = settleTransaction.BalanceAfter,
-                    Currency = player.Currency,
-                    PlayerId = player.PlayerId,
+                    TransactionId = gameTransaction.TransactionId,
+                    Balance = creditResult.Balance,
+                    Currency = existingBet.Currency,
+                    PlayerId = request.PlayerId.ToString(),
                     Status = "success",
-                    Timestamp = settleTransaction.CreatedAt,
+                    Timestamp = gameTransaction.CreatedAt,
                     WinAmount = request.TotalWin,
                     GameRoundId = request.GameRoundId
                 };

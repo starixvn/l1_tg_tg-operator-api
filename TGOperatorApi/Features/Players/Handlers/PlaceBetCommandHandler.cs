@@ -2,6 +2,7 @@ using MediatR;
 using MongoDB.Driver;
 using TgOperator.Features.Players.Commands;
 using TgOperator.Features.Players.Models;
+using TgOperator.Features.Wallets.Commands;
 using TgOperator.Shared.MongoDB;
 using Microsoft.Extensions.Options;
 using TgOperator.Shared.Configuration;
@@ -11,102 +12,81 @@ namespace TgOperator.Features.Players.Handlers
 {
     public class PlaceBetCommandHandler : IRequestHandler<PlaceBetCommand, BetResult>
     {
-        private readonly IMongoCollection<Player> _players;
-        private readonly IMongoCollection<BetTransaction> _betTransactions;
+        private readonly IMongoCollection<GameTransaction> _gameTransactions;
+        private readonly IMediator _mediator;
         private readonly IHub _sentryHub;
 
         public PlaceBetCommandHandler(
             IMongoDbFactory mongoDbFactory,
             IOptions<MongoDbSettings> mongoDbSettings,
+            IMediator mediator,
             IHub sentryHub)
         {
-            _players = mongoDbFactory.GetCollection<Player>(
-                mongoDbSettings.Value.PlayersCollectionName);
-            _betTransactions = mongoDbFactory.GetCollection<BetTransaction>(
-                mongoDbSettings.Value.BetTransactionsCollectionName);
+            _gameTransactions = mongoDbFactory.GetCollection<GameTransaction>(
+                mongoDbSettings.Value.GameTransactionsCollectionName);
+            _mediator = mediator;
             _sentryHub = sentryHub;
         }
 
         public async Task<BetResult> Handle(PlaceBetCommand command, CancellationToken cancellationToken)
         {
             var request = command.BetRequest;
-            var session = await _players.Database.Client.StartSessionAsync();
+            var session = await _gameTransactions.Database.Client.StartSessionAsync();
             
             try
             {
                 session.StartTransaction();
 
-                var player = await _players.Find(session, x =>
-                    x.OperatorId == request.OperatorId &&
-                    x.PlayerId == request.PlayerId.ToString() &&
-                    x.SiteId == request.SiteId)
-                    .FirstOrDefaultAsync(cancellationToken);
+                // Deduct balance from wallet
+                var deductResult = await _mediator.Send(new DeductBalanceCommand(
+                    new DeductBalanceRequest
+                    {
+                        PlayerId = request.PlayerId.ToString(),
+                        OperatorId = request.OperatorId,
+                        SiteId = request.SiteId,
+                        Amount = request.Amount,
+                        Currency = request.Currency,
+                        TransactionType = "bet",
+                        GameRoundId = request.GameRoundId
+                    }), cancellationToken);
 
-                if (player == null)
+                if (!deductResult.Success)
                 {
-                    throw new InvalidOperationException("Player not found");
+                    throw new InvalidOperationException(deductResult.Message);
                 }
 
-                if (player.Balance < request.Amount)
+                // Create game transaction
+                var gameTransaction = new GameTransaction
                 {
-                    throw new InvalidOperationException("Insufficient balance");
-                }
-
-                var transactionId = Guid.NewGuid().ToString();
-                var betTransaction = new BetTransaction
-                {
-                    TransactionId = transactionId,
-                    PlayerId = request.PlayerId,
-                    OperatorId = request.OperatorId,
+                    TransactionId = deductResult.TransactionId,
+                    PlayerId = request.PlayerId.ToString(),
                     SiteId = request.SiteId,
-                    Amount = request.Amount,
-                    Currency = player.Currency,
-                    BalanceBefore = player.Balance,
-                    BalanceAfter = player.Balance - request.Amount,
+                    Type = GameTransactionType.Bet,
                     GameRoundId = request.GameRoundId,
                     GameTypeId = request.GameTypeId,
-                    Seq = request.Seq,
-                    CreatedAt = DateTime.UtcNow,
+                    Currency = request.Currency,
+                    BetAmount = request.Amount,
                     IsFreeBet = request.FreeBet,
                     IsFreeSpin = request.FreeSpin,
                     ContributionAmount = request.ContributionAmount,
-                    Status = "bet"
+                    CreatedAt = DateTime.UtcNow
                 };
 
-                var filter = Builders<Player>.Filter.And(
-                    Builders<Player>.Filter.Eq(x => x.OperatorId, request.OperatorId),
-                    Builders<Player>.Filter.Eq(x => x.PlayerId, request.PlayerId.ToString()),
-                    Builders<Player>.Filter.Eq(x => x.SiteId, request.SiteId)
-                );
-
-                var update = Builders<Player>.Update.Inc(x => x.Balance, -request.Amount);
-
-                var updateResult = await _players.UpdateOneAsync(
-                    session,
-                    filter,
-                    update,
-                    cancellationToken: cancellationToken);
-
-                if (updateResult.ModifiedCount != 1)
-                {
-                    throw new InvalidOperationException("Failed to update player balance");
-                }
-
-                await _betTransactions.InsertOneAsync(
+                await _gameTransactions.InsertOneAsync(
                     session, 
-                    betTransaction, 
+                    gameTransaction,
                     cancellationToken: cancellationToken);
 
                 await session.CommitTransactionAsync(cancellationToken);
 
                 return new BetResult
                 {
-                    TransactionId = transactionId,
-                    Balance = betTransaction.BalanceAfter,
-                    Currency = player.Currency,
-                    PlayerId = player.PlayerId,
+                    TransactionId = gameTransaction.TransactionId,
+                    Balance = deductResult.Balance,
+                    Currency = request.Currency,
+                    PlayerId = request.PlayerId.ToString(),
                     Status = "success",
-                    Timestamp = betTransaction.CreatedAt,
+                    Timestamp = gameTransaction.CreatedAt,
                     Amount = request.Amount,
                     GameRoundId = request.GameRoundId
                 };
