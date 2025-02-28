@@ -110,5 +110,40 @@ namespace TgOperator.Features.Players
                 throw;
             }
         }
+
+        [HttpPost("voidgame")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<VoidGameResult>> VoidGame([FromBody] VoidGameRequest request)
+        {
+            try
+            {
+                var result = await _mediator.Send(new VoidGameCommand(request));
+                return Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                _sentryHub.CaptureException(ex, scope =>
+                {
+                    scope.SetExtra("freeBet", request.FreeBet);
+                    scope.SetExtra("reason", request.Reason);
+                    scope.SetExtra("gameTypeId", request.GameTypeId);
+                    scope.SetExtra("gameRoundId", request.GameRoundId);
+                });
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _sentryHub.CaptureException(ex, scope =>
+                {
+                    scope.SetExtra("freeBet", request.FreeBet);
+                    scope.SetExtra("reason", request.Reason);
+                    scope.SetExtra("gameTypeId", request.GameTypeId);
+                    scope.SetExtra("gameRoundId", request.GameRoundId);
+                });
+                throw;
+            }
+        }
     }
 } 
