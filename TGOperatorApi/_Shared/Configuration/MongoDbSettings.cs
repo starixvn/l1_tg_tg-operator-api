@@ -6,5 +6,6 @@ namespace TgOperator.Shared.Configuration
         public string DatabaseName { get; set; }
         public string PlayersCollectionName { get; set; }
         public string BetTransactionsCollectionName { get; set; }
+        public string BetLimitsCollectionName { get; set; }
     }
 } 

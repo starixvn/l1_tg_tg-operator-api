@@ -130,6 +130,7 @@ namespace TgOperator.Features.Players
                     scope.SetExtra("reason", request.Reason);
                     scope.SetExtra("gameTypeId", request.GameTypeId);
                     scope.SetExtra("gameRoundId", request.GameRoundId);
+                    scope.SetExtra("playerId", request.PlayerId);
                 });
                 return BadRequest(new { message = ex.Message });
             }
@@ -141,8 +142,31 @@ namespace TgOperator.Features.Players
                     scope.SetExtra("reason", request.Reason);
                     scope.SetExtra("gameTypeId", request.GameTypeId);
                     scope.SetExtra("gameRoundId", request.GameRoundId);
+                    scope.SetExtra("playerId", request.PlayerId);
                 });
                 throw;
+            }
+        }
+
+        [HttpGet("betlimit")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<BetLimitResult>> GetBetLimit([FromQuery] BetLimitRequest request)
+        {
+            try
+            {
+                var result = await _mediator.Send(new GetBetLimitCommand(request));
+                return Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                _sentryHub.CaptureException(ex, scope =>
+                {
+                    scope.SetExtra("playerId", request.PlayerId);
+                    scope.SetExtra("gameTypeId", request.GameTypeId);
+                });
+                return BadRequest(new { message = ex.Message });
             }
         }
     }
