@@ -63,9 +63,6 @@ builder.Services.AddAppConfiguration(builder.Configuration);
 // Add MongoDB Factory as Singleton
 builder.Services.AddSingleton<IMongoDbFactory, MongoDbFactory>();
 
-// Register PlayerService
-builder.Services.AddSingleton<IPlayerService, PlayerService>();
-
 // Add MediatR
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
 
