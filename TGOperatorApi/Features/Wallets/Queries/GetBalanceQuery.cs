@@ -6,10 +6,10 @@ namespace TgOperator.Features.Wallets.Queries
 
     public class GetBalanceResponse
     {
-        public string PlayerId { get; set; }
-        public string SiteId { get; set; }
+        public required string PlayerId { get; set; }
+        public required string SiteId { get; set; }
         public decimal Balance { get; set; }
-        public string Currency { get; set; }
+        public required string Currency { get; set; }
         public DateTime LastUpdatedAt { get; set; }
     }
 } 
