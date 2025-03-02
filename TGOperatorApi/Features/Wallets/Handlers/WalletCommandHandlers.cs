@@ -40,7 +40,7 @@ namespace TgOperator.Features.Wallets.Handlers
                 // Find or create wallet
                 var wallet = await _wallets.Find(session, x =>
                     x.PlayerId == request.PlayerId &&
-                    x.OperatorId == request.OperatorId &&
+                    x.VendorId == request.VendorId &&
                     x.SiteId == request.SiteId)
                     .FirstOrDefaultAsync(cancellationToken);
 
@@ -49,7 +49,7 @@ namespace TgOperator.Features.Wallets.Handlers
                     wallet = new PlayerWallet
                     {
                         PlayerId = request.PlayerId,
-                        OperatorId = request.OperatorId,
+                        VendorId = request.VendorId,
                         SiteId = request.SiteId,
                         Balance = 0,
                         Currency = request.Currency,
@@ -64,7 +64,7 @@ namespace TgOperator.Features.Wallets.Handlers
                 {
                     TransactionId = transactionId,
                     PlayerId = request.PlayerId,
-                    OperatorId = request.OperatorId,
+                    VendorId = request.VendorId,
                     SiteId = request.SiteId,
                     Type = "deposit",
                     Category = "payment",

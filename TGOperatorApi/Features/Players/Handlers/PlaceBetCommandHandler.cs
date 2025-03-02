@@ -42,7 +42,7 @@ namespace TgOperator.Features.Players.Handlers
                     new DeductBalanceRequest
                     {
                         PlayerId = request.PlayerId.ToString(),
-                        OperatorId = request.OperatorId,
+                        VendorId = request.VendorId,
                         SiteId = request.SiteId,
                         Amount = request.Amount,
                         Currency = request.Currency,

@@ -31,7 +31,7 @@ namespace TgOperator.Features.Players.Models
         public string Ip { get; set; }
         
         [Required]
-        public required string OperatorId { get; set; }
+        public required string VendorId { get; set; }
         
         [Required]
         public required string OperatorToken { get; set; }
