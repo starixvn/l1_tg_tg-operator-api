@@ -40,7 +40,7 @@ namespace TgOperator.Features.Wallets.Handlers
                 // Find wallet and check balance
                 var wallet = await _wallets.Find(session, x =>
                     x.PlayerId == request.PlayerId &&
-                    x.OperatorId == request.OperatorId &&
+                    x.VendorId == request.VendorId &&
                     x.SiteId == request.SiteId)
                     .FirstOrDefaultAsync(cancellationToken);
 
@@ -65,7 +65,7 @@ namespace TgOperator.Features.Wallets.Handlers
                 {
                     TransactionId = transactionId,
                     PlayerId = request.PlayerId,
-                    OperatorId = request.OperatorId,
+                    VendorId = request.VendorId,
                     SiteId = request.SiteId,
                     Type = "withdraw",
                     Category = "payment",

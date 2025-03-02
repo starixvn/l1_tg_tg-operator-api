@@ -5,6 +5,7 @@ namespace TgOperator.Features.Players.Models
     public class EndRoundRequest
     {
         public DateTime EndTime { get; set; }
+
         public bool FreeBet { get; set; }
         
         [Required]
@@ -30,5 +31,8 @@ namespace TgOperator.Features.Players.Models
         
         [Required]
         public decimal ValidBetAmount { get; set; }
+        
+        [Required]
+        public string VendorId { get; set; }
     }
 } 

@@ -7,7 +7,7 @@ namespace TgOperator.Features.Wallets.Commands
     public class DeductBalanceRequest
     {
         public string PlayerId { get; set; }
-        public string OperatorId { get; set; }
+        public string VendorId { get; set; }
         public string SiteId { get; set; }
         public decimal Amount { get; set; }
         public string Currency { get; set; }

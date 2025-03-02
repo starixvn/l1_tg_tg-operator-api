@@ -1,9 +1,14 @@
 namespace TgOperator.Features.Wallets.Models
 {
+    using System.ComponentModel.DataAnnotations;
+
     public class DepositRequest
     {
+        [Required]
         public string PlayerId { get; set; }
-        public string OperatorId { get; set; }
+        [Required]
+        public string VendorId { get; set; }
+        [Required]
         public string SiteId { get; set; }
         public decimal Amount { get; set; }
         public string Currency { get; set; }
@@ -13,8 +18,11 @@ namespace TgOperator.Features.Wallets.Models
 
     public class WithdrawRequest
     {
+        [Required]
         public string PlayerId { get; set; }
-        public string OperatorId { get; set; }
+        [Required]
+        public string VendorId { get; set; }
+        [Required]
         public string SiteId { get; set; }
         public decimal Amount { get; set; }
         public string Currency { get; set; }

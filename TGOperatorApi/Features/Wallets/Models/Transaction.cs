@@ -12,7 +12,7 @@ namespace TgOperator.Features.Wallets.Models
 
         public required string TransactionId { get; set; }
         public required string PlayerId { get; set; }
-        public required string OperatorId { get; set; }
+        public required string VendorId { get; set; }
         public required string SiteId { get; set; }
         
         // Transaction type (deposit, withdraw, bet, win, etc.)

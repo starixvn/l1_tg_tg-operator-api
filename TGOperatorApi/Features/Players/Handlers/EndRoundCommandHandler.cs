@@ -68,6 +68,7 @@ namespace TgOperator.Features.Players.Handlers
                     new CreditBalanceRequest
                     {
                         PlayerId = request.PlayerId.ToString(),
+                        VendorId = request.VendorId,
                         SiteId = request.SiteId,
                         Amount = request.TotalWin,
                         Currency = existingBet.Currency,
