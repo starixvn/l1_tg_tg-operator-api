@@ -31,10 +31,10 @@ namespace TgOperator.Features.Players.Models
         public string Ip { get; set; }
         
         [Required]
-        public string OperatorId { get; set; }
+        public required string OperatorId { get; set; }
         
         [Required]
-        public string OperatorToken { get; set; }
+        public required string OperatorToken { get; set; }
         
         [Required]
         public long PlayerId { get; set; }

@@ -2,7 +2,7 @@ namespace TgOperator.Shared.Configuration
 {
     public class AppSettings
     {
-        public MongoDbSettings MongoDbSettings { get; set; }        
-        public SentrySettings SentrySettings { get; set; }
+        public required MongoDbSettings MongoDbSettings { get; set; }        
+        public required SentrySettings SentrySettings { get; set; }
     }
 } 

@@ -13,16 +13,16 @@ namespace TgOperator.Features.Players.Models
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
-        public string Id { get; set; }
+        public string? Id { get; set; }
 
-        public string TransactionId { get; set; }
-        public string PlayerId { get; set; }
-        public string SiteId { get; set; }
+        public required string TransactionId { get; set; }
+        public required string PlayerId { get; set; }
+        public required string SiteId { get; set; }
         public GameTransactionType Type { get; set; }
         public string Category { get; set; } = "game";
         public long GameRoundId { get; set; }
         public int GameTypeId { get; set; }
-        public string Currency { get; set; }
+        public required string Currency { get; set; }
 
         // Bet specific fields
         public decimal? BetAmount { get; set; }

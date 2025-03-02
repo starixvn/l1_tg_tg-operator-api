@@ -2,12 +2,12 @@ namespace TgOperator.Shared.Configuration
 {
     public class MongoDbSettings
     {
-        public string ConnectionString { get; set; }
-        public string DatabaseName { get; set; }
-        public string PlayersCollectionName { get; set; }
-        public string PlayerWalletsCollectionName { get; set; }
+        public required string ConnectionString { get; set; }
+        public required string DatabaseName { get; set; }
+        public required string PlayersCollectionName { get; set; }
+        public required string PlayerWalletsCollectionName { get; set; }
         public string BetLimitsCollectionName { get; set; }
-        public string TransactionsCollectionName { get; set; }
-        public string GameTransactionsCollectionName { get; set; }
+        public required string TransactionsCollectionName { get; set; }
+        public required string GameTransactionsCollectionName { get; set; }
     }
 } 
