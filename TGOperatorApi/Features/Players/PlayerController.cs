@@ -169,5 +169,26 @@ namespace TgOperator.Features.Players
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        [HttpGet("enterportal")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<EnterPortalResult>> EnterPortal([FromQuery] EnterPortalRequest request)
+        {
+            try
+            {
+                var result = await _mediator.Send(new EnterPortalCommand(request));
+                return Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                _sentryHub.CaptureException(ex, scope =>
+                {
+                    scope.SetExtra("playerId", request.PlayerId);
+                });
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 } 
