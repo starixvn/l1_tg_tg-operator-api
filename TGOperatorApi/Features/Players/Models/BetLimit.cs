@@ -5,5 +5,6 @@ namespace TgOperator.Features.Players.Models
         public decimal MinBet { get; set; }
         public decimal MaxBet { get; set; }
         public string Currency { get; set; }
+        public string VendorId { get; set; }
     }
 } 

@@ -37,7 +37,7 @@ namespace TgOperator.Features.Players.Handlers
                 session.StartTransaction();
 
                 var player = await _players.Find(session, x =>
-                   x.OperatorId == request.OperatorId &&
+                   x.OperatorId == request.VendorId &&
                    x.PlayerId == request.PlayerId.ToString() &&
                    x.SiteId == request.SiteId)
                    .FirstOrDefaultAsync(cancellationToken);
@@ -47,12 +47,12 @@ namespace TgOperator.Features.Players.Handlers
                     return new EnterPortalResult
                     {
                         Success = false,
-                        ErrorCode = 1001,
+                        ErrorCode = 4012,
                         ErrorDescription = $"Player not found: {request.PlayerId}"
                     };
                 }
 
-                var betLimit = await _betLimits.Find(x => x.Currency == player.Currency)
+                var betLimit = await _betLimits.Find(x => x.VendorId == request.VendorId)
                     .FirstOrDefaultAsync(cancellationToken);
 
                 await session.CommitTransactionAsync(cancellationToken);
@@ -68,7 +68,7 @@ namespace TgOperator.Features.Players.Handlers
                     MaxBet = betLimit?.MaxBet ?? decimal.MaxValue
                 };
 
-                //Todo log result
+                //TODO log result
 
                 return result;
             }

@@ -3,7 +3,7 @@ namespace TgOperator.Features.Players.Models
     public class EnterPortalRequest
     {
         public string PlayerId { get; set; }
-        public string OperatorId { get; set; }
+        public string VendorId { get; set; }
         public string SiteId { get; set; }
         public string CharacterName { get; set; }
 
