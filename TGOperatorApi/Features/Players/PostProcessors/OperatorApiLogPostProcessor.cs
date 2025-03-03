@@ -1,11 +1,9 @@
 using System.Text.Json;
 using MediatR;
 using MediatR.Pipeline;
-using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using TgOperator.Features.Players.Commands;
 using TgOperator.Features.Players.Models;
-using TgOperator.Shared.Configuration;
 using TgOperator.Shared.MongoDB;
 
 namespace TgOperator.Features.Players.PostProcessors
@@ -13,16 +11,17 @@ namespace TgOperator.Features.Players.PostProcessors
     public class OperatorApiLogPostProcessor<TRequest, TResponse> : IRequestPostProcessor<TRequest, TResponse>
         where TRequest : IRequest<TResponse>
     {
+        private const string CommandSuffix = "Command";
+        private const string RequestPropertyName = "Request";
+        
         private readonly IMongoCollection<OperatorApiLog> _operatorApiLogs;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
         public OperatorApiLogPostProcessor(
             IMongoDbFactory mongoDbFactory,
-            IOptions<MongoDbSettings> mongoDbSettings,
             IHttpContextAccessor httpContextAccessor)
         {
-            _operatorApiLogs = mongoDbFactory.GetCollection<OperatorApiLog>(
-                mongoDbSettings.Value.OperatorApiLogsCollectionName);
+            _operatorApiLogs = mongoDbFactory.GetCollection<OperatorApiLog>();
             _httpContextAccessor = httpContextAccessor;
         }
 
@@ -47,14 +46,12 @@ namespace TgOperator.Features.Players.PostProcessors
         private string GetOperationType(TRequest request)
         {
             var commandName = request.GetType().Name;
-            return commandName.EndsWith("Command") 
-                ? commandName[..^7] // Remove "Command" suffix
-                : commandName;
+            return commandName.Replace(CommandSuffix, "");
         }
 
         private object GetCallData(TRequest request)
         {
-            var requestProperty = request.GetType().GetProperty("Request");
+            var requestProperty = request.GetType().GetProperty(RequestPropertyName);
             return requestProperty?.GetValue(request) ?? request;
         }
     }

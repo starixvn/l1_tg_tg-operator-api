@@ -3,8 +3,6 @@ using MongoDB.Driver;
 using TgOperator.Features.Players.Models;
 using TgOperator.Features.Players.Commands;
 using TgOperator.Shared.MongoDB;
-using Microsoft.Extensions.Options;
-using TgOperator.Shared.Configuration;
 using Sentry;
 
 namespace TgOperator.Features.Players.Handlers
@@ -16,11 +14,9 @@ namespace TgOperator.Features.Players.Handlers
 
         public PlaceBetCommandHandler(
             IMongoDbFactory mongoDbFactory,
-            IOptions<MongoDbSettings> mongoDbSettings,
             IHub sentryHub)
         {
-            _betTransactions = mongoDbFactory.GetCollection<BetTransaction>(
-                mongoDbSettings.Value.BetTransactionsCollectionName);
+            _betTransactions = mongoDbFactory.GetCollection<BetTransaction>();
             _sentryHub = sentryHub;
         }
 

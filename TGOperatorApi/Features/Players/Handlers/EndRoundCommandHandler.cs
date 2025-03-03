@@ -3,8 +3,6 @@ using MongoDB.Driver;
 using TgOperator.Features.Players.Models;
 using TgOperator.Features.Players.Commands;
 using TgOperator.Shared.MongoDB;
-using Microsoft.Extensions.Options;
-using TgOperator.Shared.Configuration;
 using Sentry;
 
 namespace TgOperator.Features.Players.Handlers
@@ -16,11 +14,9 @@ namespace TgOperator.Features.Players.Handlers
 
         public EndRoundCommandHandler(
             IMongoDbFactory mongoDbFactory,
-            IOptions<MongoDbSettings> mongoDbSettings,
             IHub sentryHub)
         {
-            _betTransactions = mongoDbFactory.GetCollection<BetTransaction>(
-                mongoDbSettings.Value.BetTransactionsCollectionName);
+            _betTransactions = mongoDbFactory.GetCollection<BetTransaction>();
             _sentryHub = sentryHub;
         }
 
@@ -38,7 +34,7 @@ namespace TgOperator.Features.Players.Handlers
                 var transaction = new BetTransaction
                 {
                     TransactionId = request.Seq,
-                    PlayerId = request.PlayerId,                    
+                    PlayerId = request.PlayerId,
                     GameRoundId = request.GameRoundId,
                     GameTypeId = request.GameTypeId,
                     Type = BetTransactionType.Settle,
@@ -47,7 +43,8 @@ namespace TgOperator.Features.Players.Handlers
                     TotalWin = request.TotalWin,
                     TotalAmount = request.TotalAmount,
                     ValidBetAmount = request.ValidBetAmount,
-                    CreatedAt = request.TimeStamp
+                    CreatedAt = request.TimeStamp,
+                    SettleTime = request.EndTime
                 };
 
                 //TODO: update player balance
