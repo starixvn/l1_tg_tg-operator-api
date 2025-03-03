@@ -153,5 +153,27 @@ namespace TgOperator.Features.Players
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        [HttpGet("maintenance")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<MaintenanceResult>> CheckMaintenance([FromQuery] MaintenanceRequest request)
+        {
+            try
+            {
+                var result = await _mediator.Send(new MaintenanceCommand(request));
+                return Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                _sentryHub.CaptureException(ex, scope =>
+                {
+                    scope.SetExtra("operatorId", request.OperatorId);
+                    scope.SetExtra("siteId", request.SiteId);
+                    scope.SetExtra("gameTypeId", request.GameTypeId);
+                });
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 } 

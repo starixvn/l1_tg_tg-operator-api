@@ -1,0 +1,41 @@
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+<<<<<<< HEAD
+  "MongoDbSettings": {
+    "ConnectionString": "mongodb://localhost:27017",
+    "DatabaseName": "TgOperatorDb",
+    "PlayersCollectionName": "Players",
+    "BetTransactionsCollectionName": "BetTransactions",
+    "BetLimitsCollectionName": "BetLimits"
+    "PlayerWalletsCollectionName": "PlayerWallets",
+    "TransactionsCollectionName": "Transactions",
+    "BetTransactionsCollectionName": "BetTransactions",
+    "BetLimitsCollectionName": "BetLimits"
+    "GameTransactionsCollectionName": "GameTransactions"
+  },
+=======
+    "MongoDbSettings": {
+        "ConnectionString": "mongodb://localhost:27017",
+        "DatabaseName": "TgOperatorDb",
+        "PlayersCollectionName": "Players",
+        "BetTransactionsCollectionName": "BetTransactions",
+        "BetLimitsCollectionName": "BetLimits",
+        "MaintenanceSchedulesCollectionName": "Maintenance"
+    },
+>>>>>>> 8a6a9e0 (feat: add api check maintenance)
+  "SentrySettings": {
+    "Dsn": "https://8746ff9e615eadc013bce4edaa65f512@sentry-k8s.lumigame.com/7",
+    "Debug": false,
+    "TracesSampleRate": 0.2,
+    "MinimumEventLevel": "Error",
+    "SendDefaultPii": true,
+    "AttachStacktrace": true,
+    "Environment": "DEV"
+  }
+}
