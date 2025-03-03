@@ -1,6 +1,8 @@
+using TGOperatorApi.Features.Players.Models;
+
 namespace TgOperator.Features.Players.Models
 {
-    public class VoidGameResult
+    public class VoidGameResult : BaseResult
     {
         public string TransactionId { get; set; }
         public decimal Balance { get; set; }

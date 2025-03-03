@@ -88,10 +88,11 @@ namespace TgOperator.Features.Players.Handlers
                     TransactionId = transactionId,
                     Currency = player.Currency,
                     PlayerId = player.PlayerId,
-                    Status = "success",
                     Timestamp = voidTransaction.CreatedAt,
                     GameRoundId = request.GameRoundId,
-                    Balance = player.Balance // TODO: get balance after void
+                    Balance = player.Balance, // TODO: get balance after void
+                    Success = true,
+                    ErrorCode = 0
                 };
             }
             catch (Exception ex)

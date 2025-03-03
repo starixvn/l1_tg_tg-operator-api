@@ -58,7 +58,8 @@ namespace TgOperator.Features.Players.Handlers
                     Currency = player.Currency,
                     MaxBet = betLimit.MaxBet,
                     MinBet = betLimit.MinBet,
-                    Status = "success",
+                    Success = true,
+                    ErrorCode = 0
                 };
 
                 return betLimitResult;

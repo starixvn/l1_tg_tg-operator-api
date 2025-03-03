@@ -46,7 +46,9 @@ namespace TgOperator.Features.Players.Handlers
                     IsMaintenance = maintenance != null,
                     Message = maintenance?.Message ?? "No maintenance scheduled",
                     StartTime = maintenance?.StartTime,
-                    EndTime = maintenance?.EndTime
+                    EndTime = maintenance?.EndTime,
+                    Success = true,
+                    ErrorCode = 0
                 };
             }
             catch (Exception ex)
