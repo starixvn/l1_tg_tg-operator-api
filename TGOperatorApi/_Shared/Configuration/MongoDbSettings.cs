@@ -4,11 +4,12 @@ namespace TgOperator.Shared.Configuration
     {
         public required string ConnectionString { get; set; }
         public required string DatabaseName { get; set; }
+        public required string VendorSettingsCollectionName { get; set; }
+        public required string BetTransactionsCollectionName { get; set; }
+        public required string OperatorApiLogsCollectionName { get; set; }
+        //TODO: review if these are needed
         public required string PlayersCollectionName { get; set; }
-        public required string PlayerWalletsCollectionName { get; set; }
-        public string BetLimitsCollectionName { get; set; }
-        public string MaintenanceSchedulesCollectionName { get; set; }
-        public required string TransactionsCollectionName { get; set; }
-        public required string GameTransactionsCollectionName { get; set; }
+        public required string MaintenanceSchedulesCollectionName { get; set; }
+        public required string BetLimitsCollectionName { get; set; }
     }
 } 

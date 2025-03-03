@@ -12,7 +12,7 @@ namespace TgOperator.Features.Players.Handlers
     public class VoidGameCommandHandler : IRequestHandler<VoidGameCommand, VoidGameResult>
     {
         private readonly IMongoCollection<Player> _players;
-        private readonly IMongoCollection<GameTransaction> _betTransactions;
+        private readonly IMongoCollection<BetTransaction> _betTransactions;
         private readonly IHub _sentryHub;
 
         public VoidGameCommandHandler(
@@ -22,8 +22,8 @@ namespace TgOperator.Features.Players.Handlers
         {
             _players = mongoDbFactory.GetCollection<Player>(
                 mongoDbSettings.Value.PlayersCollectionName);
-            _betTransactions = mongoDbFactory.GetCollection<GameTransaction>(
-                mongoDbSettings.Value.GameTransactionsCollectionName);
+            _betTransactions = mongoDbFactory.GetCollection<BetTransaction>(
+                mongoDbSettings.Value.BetTransactionsCollectionName);
             _sentryHub = sentryHub;
         }
 
@@ -66,7 +66,7 @@ namespace TgOperator.Features.Players.Handlers
                     updatePlayerBalance);
 
                 var transactionId = Guid.NewGuid().ToString();
-                var voidTransaction = new GameTransaction
+                var voidTransaction = new BetTransaction
                 {
                     Id = transactionId,
                     TransactionId = transactionId,
@@ -75,7 +75,7 @@ namespace TgOperator.Features.Players.Handlers
                     Currency = player.Currency,
                     GameRoundId = request.GameRoundId,
                     GameTypeId = request.GameTypeId,
-                    Type = GameTransactionType.Void,
+                    Type = BetTransactionType.Void,
                     CreatedAt = DateTime.UtcNow
                 };
 

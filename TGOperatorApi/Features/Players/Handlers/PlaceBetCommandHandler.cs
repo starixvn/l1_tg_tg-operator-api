@@ -1,7 +1,7 @@
 using MediatR;
 using MongoDB.Driver;
-using TgOperator.Features.Players.Commands;
 using TgOperator.Features.Players.Models;
+using TgOperator.Features.Players.Commands;
 using TgOperator.Shared.MongoDB;
 using Microsoft.Extensions.Options;
 using TgOperator.Shared.Configuration;
@@ -9,80 +9,91 @@ using Sentry;
 
 namespace TgOperator.Features.Players.Handlers
 {
-    public class PlaceBetCommandHandler : IRequestHandler<PlaceBetCommand, BetResult>
+    public class PlaceBetCommandHandler : IRequestHandler<PlaceBetCommand, PlaceBetResponse>
     {
-        private readonly IMongoCollection<GameTransaction> _gameTransactions;
-        private readonly IMediator _mediator;
+        private readonly IMongoCollection<BetTransaction> _betTransactions;
         private readonly IHub _sentryHub;
 
         public PlaceBetCommandHandler(
             IMongoDbFactory mongoDbFactory,
             IOptions<MongoDbSettings> mongoDbSettings,
-            IMediator mediator,
             IHub sentryHub)
         {
-            _gameTransactions = mongoDbFactory.GetCollection<GameTransaction>(
-                mongoDbSettings.Value.GameTransactionsCollectionName);
-            _mediator = mediator;
+            _betTransactions = mongoDbFactory.GetCollection<BetTransaction>(
+                mongoDbSettings.Value.BetTransactionsCollectionName);
             _sentryHub = sentryHub;
         }
 
-        public async Task<BetResult> Handle(PlaceBetCommand command, CancellationToken cancellationToken)
+        public async Task<PlaceBetResponse> Handle(PlaceBetCommand command, CancellationToken cancellationToken)
         {
-            var request = command.BetRequest;
-            var session = await _gameTransactions.Database.Client.StartSessionAsync();
+            //TODO: validate operator token
+            //TODO: validate player id
+
+            //TODO: validate bet command
             
+            var request = command.Request;
+            var now = DateTime.UtcNow;
+
+            // Create bet transaction
+            var transaction = new BetTransaction
+            {
+                TransactionId = request.Seq,
+                PlayerId = request.PlayerId,
+                SiteId = request.SiteId,
+                Type = BetTransactionType.Bet,
+                GameRoundId = request.GameRoundId,
+                GameTypeId = request.GameTypeId,
+                Currency = request.Currency.ToUpper(),
+                BetAmount = request.Amount,
+                IsFreeBet = request.FreeBet,
+                IsFreeSpin = request.FreeSpin,
+                ContributionAmount = request.ContributionAmount,
+                CreatedAt = request.TimeStamp
+            };
+
             try
             {
-                session.StartTransaction();
+                //TODO: deduct balance from wallet
+                await _betTransactions.InsertOneAsync(transaction, cancellationToken);
 
-                // TODO: Deduct balance from wallet
-                
-                // Create game transaction
-                var gameTransaction = new GameTransaction
+                //TODO: insert operator api log
+
+                return new PlaceBetResponse
                 {
-                    TransactionId = deductResult.TransactionId,
-                    PlayerId = request.PlayerId.ToString(),
-                    SiteId = request.SiteId,
-                    Type = GameTransactionType.Bet,
-                    GameRoundId = request.GameRoundId,
-                    GameTypeId = request.GameTypeId,
-                    Currency = request.Currency,
-                    BetAmount = request.Amount,
-                    IsFreeBet = request.FreeBet,
-                    IsFreeSpin = request.FreeSpin,
-                    ContributionAmount = request.ContributionAmount,
-                    CreatedAt = DateTime.UtcNow
-                };
-
-                await _gameTransactions.InsertOneAsync(
-                    session, 
-                    gameTransaction,
-                    cancellationToken: cancellationToken);
-
-                await session.CommitTransactionAsync(cancellationToken);
-
-                return new BetResult
-                {
-                    TransactionId = gameTransaction.TransactionId,
-                    Balance = deductResult.Balance,
-                    Currency = request.Currency,
-                    PlayerId = request.PlayerId.ToString(),
-                    Status = "success",
-                    Timestamp = gameTransaction.CreatedAt,
-                    Amount = request.Amount,
-                    GameRoundId = request.GameRoundId
+                    TimeStamp = now,
+                    Result = new PlaceBetResult
+                    {
+                        Balance = 24250, // TODO: Get actual balance from player's wallet
+                        ErrorCode = 0,
+                        ErrorDescription = "Success",
+                        PlayerId = request.PlayerId,
+                        MinBet = 1, // TODO: Get from vendor settings
+                        MaxBet = 2000, // TODO: Get from vendor settings
+                        ObTransId = long.Parse(request.Seq) // TODO: Verify if this is the correct mapping
+                    }
                 };
             }
             catch (Exception ex)
             {
-                await session.AbortTransactionAsync(cancellationToken);
-                _sentryHub.CaptureException(ex);
-                throw;
-            }
-            finally
-            {
-                session?.Dispose();
+                _sentryHub.CaptureException(ex, scope =>
+                {
+                    scope.SetExtra("placeBetRequest", request);
+                });
+
+                return new PlaceBetResponse
+                {
+                    TimeStamp = now,
+                    Result = new PlaceBetResult
+                    {   
+                        PlayerId = request.PlayerId,
+                        Balance = 0.0m,
+                        ErrorCode = 3002,
+                        ErrorDescription = "Player has insufficient funds.",
+                        MinBet = 0,
+                        MaxBet = 0,
+                        ObTransId = 0
+                    }
+                };
             }
         }
     }

@@ -27,7 +27,7 @@ namespace TgOperator.Features.Players
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<BetResult>> PlaceBet([FromBody] BetRequest request)
+        public async Task<ActionResult<PlaceBetResponse>> PlaceBet([FromBody] PlaceBetRequest request)
         {
             try
             {

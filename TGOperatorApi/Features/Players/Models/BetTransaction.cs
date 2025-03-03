@@ -3,14 +3,14 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace TgOperator.Features.Players.Models
 {
-    public enum GameTransactionType
+    public enum BetTransactionType
     {
         Bet,
         Settle,
         Void
     }
 
-    public class GameTransaction
+    public class BetTransaction
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
@@ -18,9 +18,8 @@ namespace TgOperator.Features.Players.Models
 
         public required string TransactionId { get; set; }
         public required string PlayerId { get; set; }
-        public required string SiteId { get; set; }
-        public GameTransactionType Type { get; set; }
-        public string Category { get; set; } = "game";
+        public string? SiteId { get; set; }
+        public BetTransactionType Type { get; set; }
         public long GameRoundId { get; set; }
         public int GameTypeId { get; set; }
         public required string Currency { get; set; }
