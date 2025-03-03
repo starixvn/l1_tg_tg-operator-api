@@ -16,11 +16,10 @@ namespace TgOperator.Shared.MongoDB
         private readonly IMongoDatabase _database;
         private readonly MongoDbSettings _settings;
 
-        public MongoDbFactory(IOptions<MongoDbSettings> settings)
+        public MongoDbFactory(IMongoClient mongoClient, IOptions<MongoDbSettings> settings)
         {
             _settings = settings.Value;
-            var client = new MongoClient(_settings.ConnectionString);
-            _database = client.GetDatabase(_settings.DatabaseName);
+            _database = mongoClient.GetDatabase(_settings.DatabaseName);
         }
 
         public IMongoDatabase GetDatabase() => _database;

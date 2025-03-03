@@ -8,6 +8,7 @@ using TgOperator.Features.Players;
 using TgOperator.Features.Players.PostProcessors;
 using Sentry;
 using MediatR;
+using MongoDB.Driver;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -62,6 +63,10 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddAppConfiguration(builder.Configuration);
 
 // Add MongoDB Factory as Singleton
+builder.Services.AddSingleton<IMongoClient>(sp => {
+    var settings = sp.GetRequiredService<IOptions<MongoDbSettings>>().Value;
+    return new MongoClient(settings.ConnectionString);
+});
 builder.Services.AddSingleton<IMongoDbFactory, MongoDbFactory>();
 
 // Add HttpContextAccessor
