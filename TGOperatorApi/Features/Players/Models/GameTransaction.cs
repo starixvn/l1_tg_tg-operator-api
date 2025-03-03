@@ -6,7 +6,8 @@ namespace TgOperator.Features.Players.Models
     public enum GameTransactionType
     {
         Bet,
-        Settle
+        Settle,
+        Void
     }
 
     public class GameTransaction

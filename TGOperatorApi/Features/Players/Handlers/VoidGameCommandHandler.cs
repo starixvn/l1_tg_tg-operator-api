@@ -12,7 +12,7 @@ namespace TgOperator.Features.Players.Handlers
     public class VoidGameCommandHandler : IRequestHandler<VoidGameCommand, VoidGameResult>
     {
         private readonly IMongoCollection<Player> _players;
-        private readonly IMongoCollection<BetTransaction> _betTransactions;
+        private readonly IMongoCollection<GameTransaction> _betTransactions;
         private readonly IHub _sentryHub;
 
         public VoidGameCommandHandler(
@@ -22,8 +22,8 @@ namespace TgOperator.Features.Players.Handlers
         {
             _players = mongoDbFactory.GetCollection<Player>(
                 mongoDbSettings.Value.PlayersCollectionName);
-            _betTransactions = mongoDbFactory.GetCollection<BetTransaction>(
-                mongoDbSettings.Value.BetTransactionsCollectionName);
+            _betTransactions = mongoDbFactory.GetCollection<GameTransaction>(
+                mongoDbSettings.Value.GameTransactionsCollectionName);
             _sentryHub = sentryHub;
         }
 
@@ -59,21 +59,23 @@ namespace TgOperator.Features.Players.Handlers
                 }
 
                 var updatePlayerBalance = Builders<Player>.Update
-                    .Inc(x => x.Balance, betTransaction.Amount);
+                    .Inc(x => x.Balance, betTransaction.TotalAmount ?? 0);
                 
                 await _players.UpdateOneAsync(session,
                     x => x.Id == player.Id,
                     updatePlayerBalance);
 
                 var transactionId = Guid.NewGuid().ToString();
-                var voidTransaction = new BetTransaction
+                var voidTransaction = new GameTransaction
                 {
                     Id = transactionId,
-                    PlayerId = long.Parse(player.PlayerId),
-                    OperatorId = player.OperatorId,
+                    TransactionId = transactionId,
+                    PlayerId = player.PlayerId,                    
                     SiteId = player.SiteId,
                     Currency = player.Currency,
                     GameRoundId = request.GameRoundId,
+                    GameTypeId = request.GameTypeId,
+                    Type = GameTransactionType.Void,
                     CreatedAt = DateTime.UtcNow
                 };
 
@@ -84,12 +86,12 @@ namespace TgOperator.Features.Players.Handlers
                 return new VoidGameResult
                 {
                     TransactionId = transactionId,
-                    Balance = voidTransaction.BalanceAfter,
                     Currency = player.Currency,
                     PlayerId = player.PlayerId,
                     Status = "success",
                     Timestamp = voidTransaction.CreatedAt,
-                    GameRoundId = request.GameRoundId
+                    GameRoundId = request.GameRoundId,
+                    Balance = player.Balance // TODO: get balance after void
                 };
             }
             catch (Exception ex)
