@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using TgOperator.Shared.Configuration;
 using TgOperator.Shared.MongoDB;
 using TgOperator.Features.Players;
+using TgOperator.Features.Players.PostProcessors;
 using Sentry;
 using MediatR;
 
@@ -63,8 +64,14 @@ builder.Services.AddAppConfiguration(builder.Configuration);
 // Add MongoDB Factory as Singleton
 builder.Services.AddSingleton<IMongoDbFactory, MongoDbFactory>();
 
+// Add HttpContextAccessor
+builder.Services.AddHttpContextAccessor();
+
 // Add MediatR
-builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
+builder.Services.AddMediatR(cfg => {
+    cfg.RegisterServicesFromAssembly(typeof(Program).Assembly);
+    cfg.AddRequestPostProcessor(typeof(OperatorApiLogPostProcessor<,>));
+});
 
 var app = builder.Build();
 

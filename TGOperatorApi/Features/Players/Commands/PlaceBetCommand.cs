@@ -3,7 +3,7 @@ using TgOperator.Features.Players.Models;
 
 namespace TgOperator.Features.Players.Commands
 {
-    public record PlaceBetCommand(PlaceBetRequest Request) : IRequest<PlaceBetResponse>;
+    public record PlaceBetCommand(PlaceBetRequest Request) : IRequest<PlaceBetResponse>, IPlayerCommand;
 
     public class PlaceBetRequest
     {
