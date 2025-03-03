@@ -8,7 +8,6 @@ namespace TgOperator.Shared.Configuration
         public required string PlayerWalletsCollectionName { get; set; }
         public string BetLimitsCollectionName { get; set; }
         public required string TransactionsCollectionName { get; set; }
-        public string BetLimitsCollectionName { get; set; }
         public required string GameTransactionsCollectionName { get; set; }
     }
 } 
