@@ -2,7 +2,6 @@ using MediatR;
 using MongoDB.Driver;
 using TgOperator.Features.Players.Commands;
 using TgOperator.Features.Players.Models;
-using TgOperator.Features.Wallets.Commands;
 using TgOperator.Shared.MongoDB;
 using Microsoft.Extensions.Options;
 using TgOperator.Shared.Configuration;
@@ -63,18 +62,7 @@ namespace TgOperator.Features.Players.Handlers
                     throw new InvalidOperationException("Round already settled");
                 }
 
-                // Credit win amount to wallet
-                var creditResult = await _mediator.Send(new CreditBalanceCommand(
-                    new CreditBalanceRequest
-                    {
-                        PlayerId = request.PlayerId.ToString(),
-                        VendorId = request.VendorId,
-                        SiteId = request.SiteId,
-                        Amount = request.TotalWin,
-                        Currency = existingBet.Currency,
-                        TransactionType = "win",
-                        GameRoundId = request.GameRoundId
-                    }), cancellationToken);
+                //TODO: Credit win amount to wallet                
 
                 if (!creditResult.Success)
                 {

@@ -2,7 +2,6 @@ using MediatR;
 using MongoDB.Driver;
 using TgOperator.Features.Players.Commands;
 using TgOperator.Features.Players.Models;
-using TgOperator.Features.Wallets.Commands;
 using TgOperator.Shared.MongoDB;
 using Microsoft.Extensions.Options;
 using TgOperator.Shared.Configuration;
@@ -37,24 +36,8 @@ namespace TgOperator.Features.Players.Handlers
             {
                 session.StartTransaction();
 
-                // Deduct balance from wallet
-                var deductResult = await _mediator.Send(new DeductBalanceCommand(
-                    new DeductBalanceRequest
-                    {
-                        PlayerId = request.PlayerId.ToString(),
-                        VendorId = request.VendorId,
-                        SiteId = request.SiteId,
-                        Amount = request.Amount,
-                        Currency = request.Currency,
-                        TransactionType = "bet",
-                        GameRoundId = request.GameRoundId
-                    }), cancellationToken);
-
-                if (!deductResult.Success)
-                {
-                    throw new InvalidOperationException(deductResult.Message);
-                }
-
+                // TODO: Deduct balance from wallet
+                
                 // Create game transaction
                 var gameTransaction = new GameTransaction
                 {
