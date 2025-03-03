@@ -41,25 +41,56 @@ namespace TgOperator.Features.Players.Handlers
 
                 if (player == null)
                 {
-                    throw new InvalidOperationException($"Player not found: {request.PlayerId}");
+                    return new EnterPortalResult
+                    {
+                        Success = false,
+                        ErrorCode = 1001,
+                        ErrorDescription = $"Player not found: {request.PlayerId}"
+                    };
                 }
 
-                var betLimit = await _betLimits.Find(x => x.Currency == request.Currency)
+                var betLimit = await _betLimits.Find(x => x.Currency == player.Currency)
                     .FirstOrDefaultAsync(cancellationToken);
+
+                var update = Builders<Player>.Update
+                    .Set(p => p.LastAccessTime, request.TimeStamp)
+                    .Set(p => p.SiteId, request.SiteId);
+
+                if (request.FirstLogin)
+                {
+                    update = update.Set(p => p.CharacterName, request.CharacterName);
+                }
+
+                await _players.UpdateOneAsync(
+                    session,
+                    p => p.Id == request.PlayerId,
+                    update,
+                    cancellationToken: cancellationToken);
 
                 await session.CommitTransactionAsync(cancellationToken);
                 
                 return new EnterPortalResult
                 {
+                    TimeStamp = request.TimeStamp,
+                    Success = true,
+                    Seq = request.Seq,
+                    ErrorCode = 0,
+                    ErrorDescription = "Success",
                     MinBet = betLimit?.MinBet ?? 0,
-                    MaxBet = betLimit?.MaxBet ?? decimal.MaxValue,
+                    MaxBet = betLimit?.MaxBet ?? decimal.MaxValue
                 };
             }
             catch (Exception ex)
             {
                 await session.AbortTransactionAsync(cancellationToken);
                 _sentryHub.CaptureException(ex);
-                throw;
+                
+                return new EnterPortalResult
+                {
+                    Success = false,
+                    ErrorCode = 5000,
+                    ErrorDescription = "Internal server error"
+                };
             }
             finally
             {

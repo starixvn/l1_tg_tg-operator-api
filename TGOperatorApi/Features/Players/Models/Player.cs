@@ -14,5 +14,8 @@ namespace TgOperator.Features.Players.Models
         public string SiteId { get; set; }
         public decimal Balance { get; set; }
         public string Currency { get; set; }
+        public string CharacterName { get; set; }
+
+        public DateTime LastAccessTime { get; set; }
     }
 } 

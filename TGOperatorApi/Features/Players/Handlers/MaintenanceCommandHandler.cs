@@ -26,9 +26,10 @@ namespace TgOperator.Features.Players.Handlers
 
         public async Task<MaintenanceResult> Handle(MaintenanceCommand command, CancellationToken cancellationToken)
         {
+            var request = command.MaintenanceRequest;
+            var session = await _maintenanceSchedules.Database.Client.StartSessionAsync();
             try
             {
-                var request = command.MaintenanceRequest;
                 
                 var maintenance = await _maintenanceSchedules
                     .Find(x => 
@@ -50,8 +51,13 @@ namespace TgOperator.Features.Players.Handlers
             }
             catch (Exception ex)
             {
+                await session.AbortTransactionAsync(cancellationToken);
                 _sentryHub.CaptureException(ex);
                 throw;
+            }
+            finally
+            {
+                session?.Dispose();
             }
         }
     }

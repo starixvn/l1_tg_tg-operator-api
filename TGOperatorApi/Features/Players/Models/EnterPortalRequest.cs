@@ -12,7 +12,7 @@ namespace TgOperator.Features.Players.Models
         public bool FirstLogin { get; set; }
 
         public string OperatorToken { get; set; }
-
-        public string Currency { get; set; }
+        
+        public DateTime TimeStamp { get; set; }
     }
 } 
