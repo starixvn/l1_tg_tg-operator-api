@@ -36,8 +36,11 @@ namespace TgOperator.Features.Players.Handlers
             {
                 session.StartTransaction();
 
-                var player = await _players.Find(x => x.Id == request.PlayerId)
-                    .FirstOrDefaultAsync(cancellationToken);
+                var player = await _players.Find(session, x =>
+                   x.OperatorId == request.OperatorId &&
+                   x.PlayerId == request.PlayerId.ToString() &&
+                   x.SiteId == request.SiteId)
+                   .FirstOrDefaultAsync(cancellationToken);
 
                 if (player == null)
                 {
@@ -52,24 +55,9 @@ namespace TgOperator.Features.Players.Handlers
                 var betLimit = await _betLimits.Find(x => x.Currency == player.Currency)
                     .FirstOrDefaultAsync(cancellationToken);
 
-                var update = Builders<Player>.Update
-                    .Set(p => p.LastAccessTime, request.TimeStamp)
-                    .Set(p => p.SiteId, request.SiteId);
-
-                if (request.FirstLogin)
-                {
-                    update = update.Set(p => p.CharacterName, request.CharacterName);
-                }
-
-                await _players.UpdateOneAsync(
-                    session,
-                    p => p.Id == request.PlayerId,
-                    update,
-                    cancellationToken: cancellationToken);
-
                 await session.CommitTransactionAsync(cancellationToken);
-                
-                return new EnterPortalResult
+
+                var result = new EnterPortalResult
                 {
                     TimeStamp = request.TimeStamp,
                     Success = true,
@@ -79,6 +67,10 @@ namespace TgOperator.Features.Players.Handlers
                     MinBet = betLimit?.MinBet ?? 0,
                     MaxBet = betLimit?.MaxBet ?? decimal.MaxValue
                 };
+
+                //Todo log result
+
+                return result;
             }
             catch (Exception ex)
             {
