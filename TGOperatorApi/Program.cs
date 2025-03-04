@@ -8,6 +8,7 @@ using TgOperator.Features.Players;
 using TgOperator.Features.Players.PostProcessors;
 using Sentry;
 using MediatR;
+using MediatR.Pipeline;
 using MongoDB.Driver;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -75,8 +76,10 @@ builder.Services.AddHttpContextAccessor();
 // Add MediatR
 builder.Services.AddMediatR(cfg => {
     cfg.RegisterServicesFromAssembly(typeof(Program).Assembly);
-    cfg.AddRequestPostProcessor(typeof(OperatorApiLogPostProcessor<,>));
 });
+
+// Register post-processor
+builder.Services.AddScoped(typeof(IRequestPostProcessor<,>), typeof(OperatorApiLogPostProcessor<,>));
 
 var app = builder.Build();
 
@@ -98,6 +101,8 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
 
+// Redirect root to health endpoint
+app.MapGet("/", () => Results.Redirect("/api/healthcheck"));
 
 app.Run();
 
