@@ -1,22 +1,21 @@
 using MediatR;
-using MongoDB.Driver;
 using TgOperator.Features.Players.Models;
 using TgOperator.Features.Players.Commands;
-using TgOperator.Shared.MongoDB;
+using TgOperator.Features.Players.Repositories;
 using Sentry;
 
 namespace TgOperator.Features.Players.Handlers
 {
     public class PlaceBetCommandHandler : IRequestHandler<PlaceBetCommand, PlaceBetResponse>
     {
-        private readonly IMongoCollection<BetTransaction> _betTransactions;
+        private readonly IBetTransactionRepository _betTransactionRepository;
         private readonly IHub _sentryHub;
 
         public PlaceBetCommandHandler(
-            IMongoDbFactory mongoDbFactory,
+            IBetTransactionRepository betTransactionRepository,
             IHub sentryHub)
         {
-            _betTransactions = mongoDbFactory.GetCollection<BetTransaction>();
+            _betTransactionRepository = betTransactionRepository;
             _sentryHub = sentryHub;
         }
 
@@ -50,7 +49,7 @@ namespace TgOperator.Features.Players.Handlers
             try
             {
                 //TODO: deduct balance from wallet
-                await _betTransactions.InsertOneAsync(transaction, cancellationToken);
+                await _betTransactionRepository.InsertAsync(transaction, cancellationToken);
 
                 //TODO: insert operator api log
 

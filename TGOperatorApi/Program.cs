@@ -6,6 +6,7 @@ using TgOperator.Shared.Configuration;
 using TgOperator.Shared.MongoDB;
 using TgOperator.Features.Players;
 using TgOperator.Features.Players.PostProcessors;
+using TgOperator.Features.Players.Repositories;
 using Sentry;
 using MediatR;
 using MediatR.Pipeline;
@@ -69,6 +70,9 @@ builder.Services.AddSingleton<IMongoClient>(sp => {
     return new MongoClient(settings.ConnectionString);
 });
 builder.Services.AddSingleton<IMongoDbFactory, MongoDbFactory>();
+
+// Add repositories
+builder.Services.AddScoped<IBetTransactionRepository, BetTransactionRepository>();
 
 // Add HttpContextAccessor
 builder.Services.AddHttpContextAccessor();
