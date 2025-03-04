@@ -8,8 +8,8 @@
 
         public int ErrorCode { get; set; }
 
-        public string ErrorMessage { get; set; }
+        public string Message { get; set; }
 
-        public string ErrorDescription { get; set; }
+        public string Description { get; set; }
     }
 }

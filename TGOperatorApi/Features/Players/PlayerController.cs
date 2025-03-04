@@ -175,5 +175,27 @@ namespace TgOperator.Features.Players
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        [HttpPost("signin")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<ActionResult<Models.SignInResult>> SignIn([FromBody] SignInRequest request)
+        {
+            try
+            {
+                var result = await _mediator.Send(new SignInCommand(request));
+                return Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                _sentryHub.CaptureException(ex, scope =>
+                {
+                    scope.SetExtra("playerId", request.PlayerId);
+                    scope.SetExtra("Inputs", request.Inputs);
+                });
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 } 

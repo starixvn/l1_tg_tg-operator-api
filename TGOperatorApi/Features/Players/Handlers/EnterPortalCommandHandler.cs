@@ -48,7 +48,7 @@ namespace TgOperator.Features.Players.Handlers
                     {
                         Success = false,
                         ErrorCode = 4012,
-                        ErrorDescription = $"Player not found: {request.PlayerId}"
+                        Description = $"Player not found: {request.PlayerId}"
                     };
                 }
 
@@ -63,7 +63,7 @@ namespace TgOperator.Features.Players.Handlers
                     Success = true,
                     Seq = request.Seq,
                     ErrorCode = 0,
-                    ErrorDescription = "Success",
+                    Description = "Success",
                     MinBet = betLimit?.MinBet ?? 0,
                     MaxBet = betLimit?.MaxBet ?? decimal.MaxValue
                 };
@@ -81,7 +81,7 @@ namespace TgOperator.Features.Players.Handlers
                 {
                     Success = false,
                     ErrorCode = 5000,
-                    ErrorDescription = "Internal server error"
+                    Description = "Internal server error"
                 };
             }
             finally
