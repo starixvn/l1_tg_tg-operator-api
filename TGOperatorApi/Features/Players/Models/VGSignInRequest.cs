@@ -27,5 +27,6 @@ namespace TgOperator.Features.Players.Models
     public class Auth
     {
         public string OperatorId { get; set; }
+        public string OperatorSecret { get; set; }
     }
 } 
