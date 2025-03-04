@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Net.Mime;
 using TgOperator.Features.Players.Models;
 using TgOperator.Features.Players.Commands;
+using TgOperator.Features.Players.Balance.Commands;
 using Sentry;
 using MediatR;
 
@@ -193,6 +194,29 @@ namespace TgOperator.Features.Players
                 {
                     scope.SetExtra("playerId", request.PlayerId);
                     scope.SetExtra("Inputs", request.Inputs);
+                });
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPost("balance")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<GetBalanceCommand.Response>> GetBalance([FromBody] GetBalanceCommand request)
+        {
+            try
+            {
+                var result = await _mediator.Send(request);
+                return Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                _sentryHub.CaptureException(ex, scope =>
+                {
+                    scope.SetExtra("playerId", request.PlayerId);
+                    scope.SetExtra("siteId", request.SiteId);
+                    scope.SetExtra("seq", request.Seq);
                 });
                 return BadRequest(new { message = ex.Message });
             }

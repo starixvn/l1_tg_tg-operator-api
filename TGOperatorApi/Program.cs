@@ -2,11 +2,12 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.ReDoc;
 using Microsoft.Extensions.Options;
-using TgOperator.Shared.Configuration;
 using TgOperator.Shared.MongoDB;
+using TgOperator.Shared.Configuration;
 using TgOperator.Features.Players;
 using TgOperator.Features.Players.PostProcessors;
 using TgOperator.Features.Players.Repositories;
+using TgOperator.Core.Features.Wallet;
 using Sentry;
 using MediatR;
 using MediatR.Pipeline;
@@ -85,6 +86,9 @@ builder.Services.AddMediatR(cfg => {
 // Register post-processor
 builder.Services.AddScoped(typeof(IRequestPostProcessor<,>), typeof(OperatorApiLogPostProcessor<,>));
 
+// Add Wallet Feature
+builder.Services.AddWalletFeature(builder.Configuration);
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -106,6 +110,8 @@ if (isLocal || app.Environment.IsDevelopment() )
 
 app.UseHttpsRedirection();
 app.UseAuthorization();
+
+// Map controller endpoints
 app.MapControllers();
 
 // Redirect root to health endpoint

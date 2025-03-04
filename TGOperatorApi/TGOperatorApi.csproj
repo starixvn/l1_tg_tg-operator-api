@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\TGOperator.Core\TGOperator.Core.csproj" />
+    <ProjectReference Include="..\TGOperatorApi.Core\TGOperatorApi.Core.csproj" />
   </ItemGroup>
 
 </Project>

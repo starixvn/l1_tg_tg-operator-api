@@ -49,6 +49,7 @@ namespace TgOperator.Features.Players.Handlers
             try
             {
                 //TODO: deduct balance from wallet
+                
                 await _betTransactionRepository.InsertAsync(transaction, cancellationToken);
 
                 //TODO: insert operator api log
