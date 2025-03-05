@@ -6,6 +6,7 @@ using TgOperator.Shared.MongoDB;
 using Microsoft.Extensions.Options;
 using TgOperator.Shared.Configuration;
 using Sentry;
+using ThirdPartyCore.Model.enums;
 
 namespace TgOperator.Features.Players.Handlers
 {
@@ -47,7 +48,7 @@ namespace TgOperator.Features.Players.Handlers
                     return new EnterPortalResult
                     {
                         Success = false,
-                        ErrorCode = 4012,
+                        ErrorCode = ErrorCode.User_Not_Found,
                         Description = $"Player not found: {request.PlayerId}"
                     };
                 }
@@ -80,7 +81,7 @@ namespace TgOperator.Features.Players.Handlers
                 return new EnterPortalResult
                 {
                     Success = false,
-                    ErrorCode = 5000,
+                    ErrorCode = ErrorCode.Internal_Server_Error,
                     Description = "Internal server error"
                 };
             }

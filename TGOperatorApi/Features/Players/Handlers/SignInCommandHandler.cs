@@ -14,6 +14,10 @@ using TgOperator.Features.Vendors.Services;
 using System.Net.Http.Json;
 using System.Text;
 using System.Security.Cryptography;
+using Microsoft.AspNetCore.Mvc.Versioning;
+using MongoDB.Bson;
+using TGOperatorApi.Features.Players.Models;
+using ThirdPartyCore.Model.enums;
 
 namespace TgOperator.Features.Players.Handlers
 {
@@ -42,7 +46,7 @@ namespace TgOperator.Features.Players.Handlers
             {
                 session.StartTransaction();
                 var config = new VGConfig();
-                var ApiUrl = "https://l2-api.lumigame.com/SignIn/Index/";
+                var ApiUrl = "https://l2-api.lumigame.com/SignIn/Index";
                 var operatorId = "SabaPlay";
                 var operatorSecret = "SabaPlay";
                 var operatorToken = "TGVGSabaPlay";
@@ -80,7 +84,7 @@ namespace TgOperator.Features.Players.Handlers
                     Currency = request.CurrencyId,
                     IP = request.Inputs.GetValueOrDefault("IP", ""),
                     BrowserUserAgent = request.Inputs.GetValueOrDefault("BrowserUserAgent", ""),
-                    SiteName = "site_name",
+                    SiteName = "TG",
                     IsCash = false,
                     GameId = request.Inputs.GetValueOrDefault("GameId", ""),
                     ReturnUrl = request.Inputs.GetValueOrDefault("ReturnUrl", ""),
@@ -104,16 +108,32 @@ namespace TgOperator.Features.Players.Handlers
 
                 //todo call VG
                 var result = ThirdPartyHelperBase.HttpPost(ApiUrl, postdata, "application/json", header);
-
                 await session.CommitTransactionAsync(cancellationToken);
+                var signInResult = new SignInResult();
 
-                return new SignInResult
+                if (IsJSON(result))
                 {
-                    ErrorCode = 0,
-                    Message = "",
-                    RedirectUrl = "https://www.google.com/",
-                    Token = ""
-                };
+                    var json = JsonConvert.DeserializeObject<SignInResult>(result);
+                    if (json.ErrorCode == 0)
+                    {
+                        signInResult.ErrorCode = ErrorCode.Success;
+                        signInResult.ErrorMessage = "Success";
+                        signInResult.RedirectUrl = json.RedirectUrl;
+                        signInResult.Token = json.Token;
+                    }
+                    else
+                    {
+                        signInResult.ErrorCode = ErrorCode.Fail;
+                        signInResult.ErrorMessage = json.ErrorMessage;
+                    }
+                }
+                else
+                {
+                    signInResult.ErrorMessage = "No Result";
+                    signInResult.ErrorCode = ErrorCode.Fail;
+                }
+
+                return signInResult;
             }
             catch (Exception ex)
             {
@@ -125,6 +145,14 @@ namespace TgOperator.Features.Players.Handlers
             {
                 session?.Dispose();
             }
+        }
+
+
+        private bool IsJSON(string jsonString)
+        {
+            var value = jsonString.Trim();
+
+            return (value.StartsWith("{") && value.EndsWith("}")) || (value.StartsWith("[") && value.EndsWith("]"));
         }
     }
 } 

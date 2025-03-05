@@ -1,4 +1,6 @@
-﻿namespace TGOperatorApi.Features.Players.Models
+﻿using ThirdPartyCore.Model.enums;
+
+namespace TGOperatorApi.Features.Players.Models
 {
     public class BaseResult
     {
@@ -6,9 +8,9 @@
 
         public bool Success { get; set; }
 
-        public int ErrorCode { get; set; }
+        public ErrorCode ErrorCode { get; set; }
 
-        public string Message { get; set; }
+        public string ErrorMessage { get; set; }
 
         public string Description { get; set; }
     }
