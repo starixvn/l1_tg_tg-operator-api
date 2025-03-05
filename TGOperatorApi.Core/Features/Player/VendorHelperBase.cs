@@ -1,16 +1,18 @@
-﻿using System.Net;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Security;
-using System.Numerics;
-using System.Security.Cryptography;
+using System.Net;
 using System.Security.Cryptography.X509Certificates;
+using System.Security.Cryptography;
 using System.Text;
-using Microsoft.Extensions.Options;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
-using TGOperator.Core.Model;
+using TgOperator.Core.Features.Player.Model;
 
-namespace VendorCore
+namespace TgOperator.Core.Features.Player
 {
-    public abstract class ThirdPartyHelperBase
+    public abstract class VendorHelperBase 
     {
         public static int proxyPort;
         public static string proxyHost;

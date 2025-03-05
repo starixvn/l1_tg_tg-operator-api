@@ -1,4 +1,4 @@
-﻿namespace ThirdPartyCore.Model.enums
+﻿namespace TGOperatorApi.Features.Players.Models.Enums
 {
     public enum ErrorCode
     {

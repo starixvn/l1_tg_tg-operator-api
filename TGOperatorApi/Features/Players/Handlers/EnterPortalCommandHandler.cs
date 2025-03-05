@@ -6,7 +6,7 @@ using TgOperator.Shared.MongoDB;
 using Microsoft.Extensions.Options;
 using TgOperator.Shared.Configuration;
 using Sentry;
-using ThirdPartyCore.Model.enums;
+using TGOperatorApi.Features.Players.Models.Enums;
 
 namespace TgOperator.Features.Players.Handlers
 {

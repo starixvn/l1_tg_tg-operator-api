@@ -6,18 +6,11 @@ using TgOperator.Shared.MongoDB;
 using Microsoft.Extensions.Options;
 using TgOperator.Shared.Configuration;
 using Newtonsoft.Json;
-using VendorCore;
-using TgOperator.Features.Players.PostProcessors;
-using TGOperator.Core.Model;
-using static System.Net.WebRequestMethods;
-using TgOperator.Features.Vendors.Services;
-using System.Net.Http.Json;
 using System.Text;
 using System.Security.Cryptography;
-using Microsoft.AspNetCore.Mvc.Versioning;
-using MongoDB.Bson;
-using TGOperatorApi.Features.Players.Models;
-using ThirdPartyCore.Model.enums;
+using TgOperator.Core.Features.Player.Model;
+using TgOperator.Core.Features.Player;
+using TGOperatorApi.Features.Players.Models.Enums;
 
 namespace TgOperator.Features.Players.Handlers
 {
@@ -107,7 +100,7 @@ namespace TgOperator.Features.Players.Handlers
                 };
 
                 //todo call VG
-                var result = ThirdPartyHelperBase.HttpPost(ApiUrl, postdata, "application/json", header);
+                var result = VendorHelperBase.HttpPost(ApiUrl, postdata, "application/json", header);
                 await session.CommitTransactionAsync(cancellationToken);
                 var signInResult = new SignInResult();
 

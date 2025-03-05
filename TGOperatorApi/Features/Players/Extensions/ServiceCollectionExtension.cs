@@ -1,4 +1,4 @@
-﻿using VendorCore;
+﻿using TgOperator.Core.Features.Player;
 
 namespace ThirdPartyService.Extensions
 {
@@ -9,8 +9,8 @@ namespace ThirdPartyService.Extensions
         {
             if (!string.IsNullOrWhiteSpace(configuration.GetValue<string>("ProxyHost")))
             {
-                ThirdPartyHelperBase.proxyHost = configuration.GetValue<string>("ProxyHost");
-                ThirdPartyHelperBase.proxyPort = configuration.GetValue<int>("ProxyPort");
+                VendorHelperBase.proxyHost = configuration.GetValue<string>("ProxyHost");
+                VendorHelperBase.proxyPort = configuration.GetValue<int>("ProxyPort");
             }
         }
     }

@@ -1,4 +1,4 @@
-﻿using ThirdPartyCore.Model.enums;
+﻿using TGOperatorApi.Features.Players.Models.Enums;
 
 namespace TGOperatorApi.Features.Players.Models
 {

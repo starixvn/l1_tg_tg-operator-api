@@ -1,4 +1,4 @@
-﻿namespace TGOperator.Core.Model
+﻿namespace TgOperator.Core.Features.Player.Model
 {
     public class VGConfig
     {
