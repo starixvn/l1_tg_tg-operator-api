@@ -12,6 +12,7 @@ using Sentry;
 using MediatR;
 using MediatR.Pipeline;
 using MongoDB.Driver;
+using TGOperatorApi.Features.Vendors.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -64,6 +65,10 @@ builder.Services.AddSwaggerGen(c =>
 
 // Add configuration
 builder.Services.AddAppConfiguration(builder.Configuration);
+
+// Add VendorSettings configuration
+builder.Services.Configure<VendorConfig>(
+    builder.Configuration.GetSection(nameof(VendorConfig)));
 
 // Add MongoDB Factory as Singleton
 builder.Services.AddSingleton<IMongoClient>(sp => {
