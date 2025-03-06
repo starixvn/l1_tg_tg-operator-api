@@ -181,7 +181,7 @@ namespace TgOperator.Features.Players
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        public async Task<ActionResult<Models.SignInResult>> SignIn([FromBody] SignInRequest request)
+        public async Task<ActionResult<Commands.SignInResult>> SignIn([FromBody] SignInRequest request)
         {
             try
             {

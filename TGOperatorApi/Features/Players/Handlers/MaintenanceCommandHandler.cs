@@ -1,17 +1,14 @@
 using MediatR;
-using MongoDB.Driver;
 using TgOperator.Features.Players.Commands;
-using TgOperator.Features.Players.Models;
 using TgOperator.Shared.MongoDB;
 using Microsoft.Extensions.Options;
 using TgOperator.Shared.Configuration;
-using Sentry;
+using TGOperatorApi.Features.Players.Models.Enums;
 
 namespace TgOperator.Features.Players.Handlers
 {
-    public class MaintenanceCommandHandler : IRequestHandler<MaintenanceCommand, MaintenanceResult>
+    public class MaintenanceCommandHandler : IRequestHandler<MaintenanceCommand, MaintenanceResponse>
     {
-        private readonly IMongoCollection<MaintenanceSchedule> _maintenanceSchedules;
         private readonly IHub _sentryHub;
 
         public MaintenanceCommandHandler(
@@ -19,47 +16,49 @@ namespace TgOperator.Features.Players.Handlers
             IOptions<MongoDbSettings> mongoDbSettings,
             IHub sentryHub)
         {
-            _maintenanceSchedules = mongoDbFactory.GetCollection<MaintenanceSchedule>(
-                mongoDbSettings.Value.MaintenanceSchedulesCollectionName);
             _sentryHub = sentryHub;
         }
 
-        public async Task<MaintenanceResult> Handle(MaintenanceCommand command, CancellationToken cancellationToken)
+        public async Task<MaintenanceResponse> Handle(MaintenanceCommand command, CancellationToken cancellationToken)
         {
-            var request = command.MaintenanceRequest;
-            var session = await _maintenanceSchedules.Database.Client.StartSessionAsync();
+            var request = command.Request;
+            var now = DateTime.UtcNow;
             try
             {
-                
-                var maintenance = await _maintenanceSchedules
-                    .Find(x => 
-                        x.OperatorId == request.OperatorId &&
-                        x.SiteId == request.SiteId &&
-                        (x.GameTypeId == request.GameTypeId || string.IsNullOrEmpty(x.GameTypeId)) &&
-                        x.StartTime <= DateTime.UtcNow &&
-                        x.EndTime >= DateTime.UtcNow &&
-                        x.IsActive)
-                    .FirstOrDefaultAsync(cancellationToken);
+                //check manternance
 
-                return new MaintenanceResult
+                //TODO  return maintenance
+                return new MaintenanceResponse
                 {
-                    IsMaintenance = maintenance != null,
-                    Message = maintenance?.Message ?? "No maintenance scheduled",
-                    StartTime = maintenance?.StartTime,
-                    EndTime = maintenance?.EndTime,
-                    Success = true,
-                    ErrorCode = 0
+                    TimeStamp = now,
+                    Result = new MaintenanceResult
+                    {
+                        Seq = request.Seq,
+                        IsMaintenance = false,
+                        Message = "No maintenance scheduled",
+                        StartTime = now,
+                        EndTime = now,
+                        ErrorCode = 0
+                    }
                 };
             }
             catch (Exception ex)
             {
-                await session.AbortTransactionAsync(cancellationToken);
-                _sentryHub.CaptureException(ex);
-                throw;
-            }
-            finally
-            {
-                session?.Dispose();
+                _sentryHub.CaptureException(ex, scope =>
+                {
+                    scope.SetExtra("maintenanceRequest", request);
+                });
+
+                return new MaintenanceResponse
+                {
+                    TimeStamp = now,
+                    Result = new MaintenanceResult
+                    {
+                        Seq = request.Seq,
+                        ErrorCode = ErrorCode.Fail,
+                        ErrorDescription = "Unspecified Error."
+                    }
+                };
             }
         }
     }

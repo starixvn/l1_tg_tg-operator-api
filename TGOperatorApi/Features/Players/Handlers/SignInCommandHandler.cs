@@ -14,9 +14,8 @@ using TGOperatorApi.Features.Vendors.Models;
 
 namespace TgOperator.Features.Players.Handlers
 {
-    public class SignInCommandHandler : IRequestHandler<SignInCommand, SignInResult>
+    public class SignInCommandHandler : IRequestHandler<SignInCommand, SignInResponse>
     {
-        private readonly IMongoCollection<Player> _players;
         private readonly IHub _sentryHub;
         private readonly VendorConfig _VendorConfig;
 
@@ -26,32 +25,41 @@ namespace TgOperator.Features.Players.Handlers
             IOptions<VendorConfig> VendorConfig,
             IHub sentryHub)
         {
-            _players = mongoDbFactory.GetCollection<Player>(
-                mongoDbSettings.Value.PlayersCollectionName);
             _sentryHub = sentryHub;
             _VendorConfig = VendorConfig.Value;
         }
 
-        public async Task<SignInResult> Handle(SignInCommand command, CancellationToken cancellationToken)
+        public async Task<SignInResponse> Handle(SignInCommand command, CancellationToken cancellationToken)
         {
-            using var session = await _players.Database.Client.StartSessionAsync();
-            
+            var request = command.Request;
+            var now = DateTime.UtcNow;
+
             try
             {
-                session.StartTransaction();
-                var signInRequest = CreateVGSignInRequest(command.SignInRequest);
+                var signInRequest = CreateVGSignInRequest(request);
                 var header = CreateRequestHeader(signInRequest, _VendorConfig.OperatorSecret);
                 
                 var result = await CallVendorApi(signInRequest, header);
-                await session.CommitTransactionAsync(cancellationToken);
                 
-                return ParseSignInResult(result, command.SignInRequest);
+                return ParseSignInResult(result, request, now);
             }
             catch (Exception ex)
             {
-                await session.AbortTransactionAsync(cancellationToken);
-                _sentryHub.CaptureException(ex);
-                throw;
+                _sentryHub.CaptureException(ex, scope =>
+                {
+                    scope.SetExtra("signInRequest", request);
+                });
+
+                return new SignInResponse
+                {
+                    TimeStamp = now,
+                    Result = new SignInResult
+                    {
+                        Seq = request.Seq,
+                        ErrorCode = ErrorCode.Fail,
+                        ErrorDescription = ex.Message
+                    }
+                };
             }
         }
 
@@ -99,33 +107,45 @@ namespace TgOperator.Features.Players.Handlers
             return VendorHelperBase.HttpPost(_VendorConfig.ApiUrl, postdata, "application/json", header);
         }
 
-        private SignInResult ParseSignInResult(string result, SignInRequest signInRequest)
+        private SignInResponse ParseSignInResult(string result, SignInRequest signInRequest, DateTime now)
         {
             if (!IsJSON(result))
             {
-                return new SignInResult
+                return new SignInResponse
                 {
-                    Seq = signInRequest.Seq,
-                    ErrorMessage = "No Result",
-                    ErrorCode = ErrorCode.Fail
+                    TimeStamp = now,
+                    Result = new SignInResult
+                    {
+                        Seq = signInRequest.Seq,
+                        ErrorMessage = "No Result",
+                        ErrorCode = ErrorCode.Fail
+                    }
                 };
             }
 
             var json = JsonConvert.DeserializeObject<SignInResult>(result);
             return json.ErrorCode == 0
-                ? new SignInResult
+                ? new SignInResponse
                 {
-                    Seq = signInRequest.Seq,
-                    ErrorCode = ErrorCode.Success,
-                    ErrorMessage = "Success",
-                    RedirectUrl = json.RedirectUrl,
-                    Token = json.Token
+                    TimeStamp = now,
+                    Result = new SignInResult
+                    {
+                        Seq = signInRequest.Seq,
+                        ErrorCode = ErrorCode.Success,
+                        ErrorMessage = "Success",
+                        RedirectUrl = json.RedirectUrl,
+                        Token = json.Token
+                    }                    
                 }
-                : new SignInResult
+                : new SignInResponse
                 {
-                    Seq = signInRequest.Seq,
-                    ErrorCode = ErrorCode.Fail,
-                    ErrorMessage = json.ErrorMessage
+                    TimeStamp = now,
+                    Result = new SignInResult
+                    {
+                        Seq = signInRequest.Seq,
+                        ErrorCode = ErrorCode.Fail,
+                        ErrorMessage = json.ErrorMessage
+                    }
                 };
         }
 

@@ -7,87 +7,69 @@ using Microsoft.Extensions.Options;
 using TgOperator.Shared.Configuration;
 using Sentry;
 using TGOperatorApi.Features.Players.Models.Enums;
+using TgOperator.Features.Players.Repositories;
 
 namespace TgOperator.Features.Players.Handlers
 {
-    public class EnterPortalCommandHandler : IRequestHandler<EnterPortalCommand, EnterPortalResult>
+    public class EnterPortalCommandHandler : IRequestHandler<EnterPortalCommand, EnterPortalResponse>
     {
-        private readonly IMongoCollection<Player> _players;
-        private readonly IMongoCollection<BetLimit> _betLimits;
+        private readonly IVendorRepository _vendorRepository;
         private readonly IHub _sentryHub;
 
         public EnterPortalCommandHandler(
-            IMongoDbFactory mongoDbFactory,
-            IOptions<MongoDbSettings> mongoDbSettings,
+            IVendorRepository vendorRepository,
             IHub sentryHub)
         {
-            _players = mongoDbFactory.GetCollection<Player>(
-                mongoDbSettings.Value.PlayersCollectionName);
-            _betLimits = mongoDbFactory.GetCollection<BetLimit>(
-                mongoDbSettings.Value.BetLimitsCollectionName);
+            _vendorRepository = vendorRepository;
             _sentryHub = sentryHub;
         }
 
-        public async Task<EnterPortalResult> Handle(EnterPortalCommand command, CancellationToken cancellationToken)
+        public async Task<EnterPortalResponse> Handle(EnterPortalCommand command, CancellationToken cancellationToken)
         {
-            var request = command.EnterPortalRequest;
-            var session = await _players.Database.Client.StartSessionAsync();
-            
+            var request = command.Request;
+            var now = DateTime.UtcNow;
+
             try
             {
-                session.StartTransaction();
+                var betLimit = await _vendorRepository.GetByVendorIdAsync(request.VendorId, cancellationToken);
 
-                var player = await _players.Find(session, x =>
-                   x.OperatorId == request.VendorId &&
-                   x.PlayerId == request.PlayerId.ToString() &&
-                   x.SiteId == request.SiteId)
-                   .FirstOrDefaultAsync(cancellationToken);
-
-                if (player == null)
+                if (betLimit == null)
                 {
-                    return new EnterPortalResult
-                    {
-                        Success = false,
-                        ErrorCode = ErrorCode.User_Not_Found,
-                        Description = $"Player not found: {request.PlayerId}"
-                    };
+                    throw new InvalidOperationException("Bet limit configuration not found");
                 }
 
-                var betLimit = await _betLimits.Find(x => x.VendorId == request.VendorId)
-                    .FirstOrDefaultAsync(cancellationToken);
-
-                await session.CommitTransactionAsync(cancellationToken);
-
-                var result = new EnterPortalResult
-                {
-                    TimeStamp = request.TimeStamp,
-                    Success = true,
-                    Seq = request.Seq,
-                    ErrorCode = 0,
-                    Description = "Success",
-                    MinBet = betLimit?.MinBet ?? 0,
-                    MaxBet = betLimit?.MaxBet ?? decimal.MaxValue
+                return new EnterPortalResponse { 
+                    TimeStamp = now,
+                    Result = new EnterPortalResult
+                    {
+                        Seq = request.Seq,
+                        ErrorCode = 0,
+                        ErrorDescription = "Success",
+                        MinBet = betLimit?.MinBet ?? 0,
+                        MaxBet = betLimit?.MaxBet ?? decimal.MaxValue
+                    }
                 };
-
-                //TODO log result
-
-                return result;
             }
             catch (Exception ex)
             {
-                await session.AbortTransactionAsync(cancellationToken);
-                _sentryHub.CaptureException(ex);
-                
-                return new EnterPortalResult
+                _sentryHub.CaptureException(ex, scope =>
                 {
-                    Success = false,
-                    ErrorCode = ErrorCode.Internal_Server_Error,
-                    Description = "Internal server error"
+                    scope.SetExtra("enterPortalRequest", request);
+                });
+
+                return new EnterPortalResponse
+                {
+                    TimeStamp = now,
+                    Result = new EnterPortalResult
+                    {
+                        Seq = request.Seq,
+                        MinBet = 0,
+                        MaxBet = 0,
+                        ErrorCode = ErrorCode.Internal_Server_Error,
+                        ErrorDescription = ex.Message,
+                    }
+
                 };
-            }
-            finally
-            {
-                session?.Dispose();
             }
         }
     }

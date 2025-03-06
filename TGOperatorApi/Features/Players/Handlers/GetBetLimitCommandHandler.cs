@@ -3,49 +3,34 @@ using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using TgOperator.Features.Players.Commands;
 using TgOperator.Features.Players.Models;
+using TgOperator.Features.Players.Repositories;
 using TgOperator.Shared.Configuration;
 using TgOperator.Shared.MongoDB;
+using TGOperatorApi.Features.Players.Models;
+using TGOperatorApi.Features.Players.Models.Enums;
 
 namespace TgOperator.Features.Players.Handlers
 {
-    public class GetBetLimitCommandHandler : IRequestHandler<GetBetLimitCommand, BetLimitResult>
+    public class GetBetLimitCommandHandler : IRequestHandler<GetBetLimitCommand, BetLimitResponse>
     {
-        private readonly IMongoCollection<Player> _players;
-        private readonly IMongoCollection<BetLimit> _betLimits;
+        private readonly IVendorRepository _vendorRepository;
         private readonly IHub _sentryHub;
 
         public GetBetLimitCommandHandler(
-            IMongoDbFactory mongoDbFactory,
-            IOptions<MongoDbSettings> mongoDbSettings,
+            IVendorRepository vendorRepository,
             IHub sentryHub)
         {
-            _players = mongoDbFactory.GetCollection<Player>(
-                mongoDbSettings.Value.PlayersCollectionName);
-            _betLimits = mongoDbFactory.GetCollection<BetLimit>(
-                mongoDbSettings.Value.BetLimitsCollectionName);
+            _vendorRepository = vendorRepository;
             _sentryHub = sentryHub;
         }
 
-        public async Task<BetLimitResult> Handle(GetBetLimitCommand command, CancellationToken cancellationToken)
+        public async Task<BetLimitResponse> Handle(GetBetLimitCommand command, CancellationToken cancellationToken)
         {
-            var request = command.BetLimitRequest;
-            var session = await _players.Database.Client.StartSessionAsync();
+            var request = command.Request;
+            var now = DateTime.UtcNow;
             try
             {
-                var player = await _players.Find(x =>
-                    x.OperatorId == request.OperatorId &&
-                    x.PlayerId == request.PlayerId.ToString() &&
-                    x.SiteId == request.SiteId)
-                    .FirstOrDefaultAsync(cancellationToken);
-
-                if (player == null)
-                {
-                    throw new InvalidOperationException("Player not found");
-                }
-
-                var betLimit = await _betLimits.Find(x =>
-                    x.Currency == request.Currency)
-                    .FirstOrDefaultAsync(cancellationToken);
+                var betLimit = await _vendorRepository.GetByVendorIdAsync(request.VendorId, cancellationToken);
 
                 if (betLimit == null)
                 {
@@ -54,25 +39,36 @@ namespace TgOperator.Features.Players.Handlers
 
                 var betLimitResult = new BetLimitResult
                 {
-                    PlayerId = player.PlayerId,
-                    Currency = player.Currency,
+                    Seq = request.Seq,
                     MaxBet = betLimit.MaxBet,
                     MinBet = betLimit.MinBet,
-                    Success = true,
                     ErrorCode = 0
                 };
 
-                return betLimitResult;
+                return new BetLimitResponse { 
+                    TimeStamp = now,
+                    Result = betLimitResult,
+                };
             }
             catch (Exception ex)
             {
-                await session.AbortTransactionAsync(cancellationToken);
-                _sentryHub.CaptureException(ex);
-                throw;
-            }
-            finally
-            {
-                session?.Dispose();
+                _sentryHub.CaptureException(ex, scope =>
+                {
+                    scope.SetExtra("getBetLimitRequest", request);
+                });
+
+                return new BetLimitResponse
+                {
+                    TimeStamp = now,
+                    Result = new BetLimitResult
+                    {
+                        Seq = request.Seq,
+                        MinBet = 0,
+                        MaxBet = 0,
+                        ErrorCode = ErrorCode.Fail,
+                        ErrorDescription = ex.Message
+                    }
+                };
             }
         }
     }

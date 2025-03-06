@@ -79,6 +79,7 @@ builder.Services.AddSingleton<IMongoDbFactory, MongoDbFactory>();
 
 // Add repositories
 builder.Services.AddScoped<IBetTransactionRepository, BetTransactionRepository>();
+builder.Services.AddScoped<IVendorRepository, VendorRepository>();
 
 // Add HttpContextAccessor
 builder.Services.AddHttpContextAccessor();
